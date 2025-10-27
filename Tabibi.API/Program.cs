@@ -1,4 +1,6 @@
 
+using Scalar.AspNetCore;
+
 namespace Tabibi.API
 {
     public class Program
@@ -7,24 +9,25 @@ namespace Tabibi.API
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
-
-            builder.Services.AddControllers();
-            // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-            builder.Services.AddOpenApi();
+            builder
+                .AddApiServices()
+                .AddErrorHandling()
+                .AddDatabase()
+                .AddApplicationServices()
+                .AddAuthenticationServices()
+                .AddEmailServices();
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-            {
-                app.MapOpenApi();
-            }
+            app.MapOpenApi();
+            app.MapScalarApiReference();
 
             app.UseHttpsRedirection();
 
-            app.UseAuthorization();
+            app.UseExceptionHandler();
 
+            app.UseAuthentication();
+            app.UseAuthorization();
 
             app.MapControllers();
 

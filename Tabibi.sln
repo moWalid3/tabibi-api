@@ -5,6 +5,8 @@ VisualStudioVersion = 17.14.36616.10 d17.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tabibi.API", "Tabibi.API\Tabibi.API.csproj", "{0794B612-8C71-4F67-800E-C048E473A824}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tabibi.EmailService", "Tabibi.EmailService\Tabibi.EmailService.csproj", "{68F45C13-CC97-4ADB-9525-CDDF8487C975}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{0794B612-8C71-4F67-800E-C048E473A824}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0794B612-8C71-4F67-800E-C048E473A824}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0794B612-8C71-4F67-800E-C048E473A824}.Release|Any CPU.Build.0 = Release|Any CPU
+		{68F45C13-CC97-4ADB-9525-CDDF8487C975}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{68F45C13-CC97-4ADB-9525-CDDF8487C975}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{68F45C13-CC97-4ADB-9525-CDDF8487C975}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{68F45C13-CC97-4ADB-9525-CDDF8487C975}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
