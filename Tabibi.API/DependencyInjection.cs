@@ -9,6 +9,7 @@ using Newtonsoft.Json.Serialization;
 using System.Text;
 using Tabibi.API.Configurations;
 using Tabibi.API.Database;
+using Tabibi.API.Entities;
 using Tabibi.API.Middlewares;
 using Tabibi.API.Services;
 using Tabibi.EmailService;
@@ -50,15 +51,7 @@ namespace Tabibi.API
             {
                 options.UseSqlServer(builder.Configuration.GetConnectionString("Database"), sqlOptions =>
                 {
-                    sqlOptions.MigrationsHistoryTable(HistoryRepository.DefaultTableName, Schemas.Application);
-                });
-            });
-
-            builder.Services.AddDbContext<AppIdentityDbContext>(options =>
-            {
-                options.UseSqlServer(builder.Configuration.GetConnectionString("Database"), sqlOptions =>
-                {
-                    sqlOptions.MigrationsHistoryTable(HistoryRepository.DefaultTableName, Schemas.Identity);
+                    sqlOptions.MigrationsHistoryTable(HistoryRepository.DefaultTableName, Schemas.Meta);
                 });
             });
 
@@ -99,12 +92,12 @@ namespace Tabibi.API
 
         public static WebApplicationBuilder AddAuthenticationServices(this WebApplicationBuilder builder)
         {
-            builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
+            builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
             {
                 options.User.RequireUniqueEmail = true;
                 options.SignIn.RequireConfirmedEmail = true;
             })
-            .AddEntityFrameworkStores<AppIdentityDbContext>()
+            .AddEntityFrameworkStores<AppDbContext>()
             .AddDefaultTokenProviders();
 
             builder.Services.Configure<JwtAuthOptions>(builder.Configuration.GetSection("Jwt"));

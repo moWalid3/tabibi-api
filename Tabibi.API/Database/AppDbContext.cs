@@ -1,18 +1,25 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Tabibi.API.Database.Configurations;
 using Tabibi.API.Entities;
 
 namespace Tabibi.API.Database
 {
-    public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
+    public sealed class AppDbContext
+        (DbContextOptions<AppDbContext> options) : IdentityDbContext<ApplicationUser>(options)
     {
-        public DbSet<User> Users { get; set; }
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        protected override void OnModelCreating(ModelBuilder builder)
         {
-            modelBuilder.HasDefaultSchema(Schemas.Application);
+            base.OnModelCreating(builder);
 
-            modelBuilder.ApplyConfiguration(new UserConfiguration());
+            builder.HasDefaultSchema(Schemas.Identity);
+
+            ////builder.Entity<Next>().ToTable(nameof(Nexts), Schemas.Core);
+
+            builder.ApplyConfiguration(new ApplicationUserConfiguration());
+            builder.ApplyConfiguration(new RefreshTokenConfiguration());
         }
     }
 }

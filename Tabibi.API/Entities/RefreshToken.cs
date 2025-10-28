@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
-
-namespace Tabibi.API.Entities
+﻿namespace Tabibi.API.Entities
 {
     public sealed class RefreshToken
     {
@@ -9,6 +7,6 @@ namespace Tabibi.API.Entities
         public required DateTime ExpiresAtUtc { get; set; }
 
         public required string UserId { get; set; }
-        public IdentityUser? User { get; set; }
+        public ApplicationUser? User { get; set; }
     }
 }

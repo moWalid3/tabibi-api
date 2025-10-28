@@ -8,7 +8,6 @@ using Tabibi.API.Common;
 using Tabibi.API.Configurations;
 using Tabibi.API.Database;
 using Tabibi.API.DTOs.Auth;
-using Tabibi.API.DTOs.Users;
 using Tabibi.API.Entities;
 using Tabibi.API.Services;
 using Tabibi.EmailService;
@@ -19,13 +18,12 @@ namespace Tabibi.API.Controllers
     [ApiController]
     [AllowAnonymous]
     public sealed class AuthController(
-        UserManager<IdentityUser> userManager,
+        UserManager<ApplicationUser> userManager,
         AppDbContext appDbContext,
-        AppIdentityDbContext identityDbContext,
         TokenProvider tokenProvider,
         IOptions<JwtAuthOptions> options) : ControllerBase
     {
-        private readonly JwtAuthOptions jwtAuthOptions = options.Value;
+        private readonly JwtAuthOptions _jwtAuthOptions = options.Value;
 
 
         [HttpPost("register")]
@@ -48,13 +46,15 @@ namespace Tabibi.API.Controllers
                     statusCode: StatusCodes.Status409Conflict);
             }
 
-            IdentityUser identityUser = new()
+            ApplicationUser appUser = new()
             {
+                Name = registerUserDto.Name,
                 UserName = registerUserDto.Email,
-                Email = registerUserDto.Email
+                Email = registerUserDto.Email,
+                CreatedAtUtc = DateTime.UtcNow
             };
 
-            IdentityResult createUserResult = await userManager.CreateAsync(identityUser, registerUserDto.Password);
+            IdentityResult createUserResult = await userManager.CreateAsync(appUser, registerUserDto.Password);
 
             if (!createUserResult.Succeeded)
             {
@@ -86,7 +86,7 @@ namespace Tabibi.API.Controllers
                     detail: "Invalid Role");
             }
 
-            IdentityResult addToRoleResult = await userManager.AddToRoleAsync(identityUser, role);
+            IdentityResult addToRoleResult = await userManager.AddToRoleAsync(appUser, role);
 
             if (!addToRoleResult.Succeeded)
             {
@@ -104,24 +104,16 @@ namespace Tabibi.API.Controllers
                     extensions: extensions);
             }
 
-            //---------
             // Send confirm email
-
-            string code = await userManager.GenerateTwoFactorTokenAsync(identityUser, TokenOptions.DefaultEmailProvider);
+            string code = await userManager.GenerateTwoFactorTokenAsync(appUser, TokenOptions.DefaultEmailProvider);
 
             Message message = new(
-                [identityUser.Email!],
+                [appUser.Email!],
                 "Email confirmation code",
                 $"Welcome! Your email confirmation code is: {code}");
 
             await emailSender.SendEmailAsync(message);
-
             //---------
-
-            User user = registerUserDto.ToEntity(identityUser.Id);
-
-            await appDbContext.Users.AddAsync(user);
-            await appDbContext.SaveChangesAsync();
 
             return Created();
         }
@@ -136,26 +128,26 @@ namespace Tabibi.API.Controllers
         {
             await validator.ValidateAndThrowAsync(loginUserDto);
 
-            IdentityUser? identityUser = await userManager.FindByEmailAsync(loginUserDto.Email);
+            ApplicationUser? appUser = await userManager.FindByEmailAsync(loginUserDto.Email);
 
-            if (identityUser == null || !await userManager.CheckPasswordAsync(identityUser, loginUserDto.Password))
+            if (appUser == null || !await userManager.CheckPasswordAsync(appUser, loginUserDto.Password))
             {
                 return Problem(
                     "Invalid email or password",
                     statusCode: StatusCodes.Status400BadRequest);
             }
 
-            if (!identityUser.EmailConfirmed)
+            if (!appUser.EmailConfirmed)
             {
                 return Problem("Please confirm your email", statusCode: StatusCodes.Status400BadRequest);
             }
 
-            IList<string> roles = await userManager.GetRolesAsync(identityUser);
+            IList<string> roles = await userManager.GetRolesAsync(appUser);
 
             TokenRequestDto tokenRequest = new()
             {
-                UserId = identityUser.Id,
-                Email = identityUser.Email!,
+                UserId = appUser.Id,
+                Email = appUser.Email!,
                 Roles = [.. roles]
             };
 
@@ -165,12 +157,12 @@ namespace Tabibi.API.Controllers
             {
                 Id = Guid.CreateVersion7(),
                 Token = accessTokens.RefreshToken,
-                UserId = identityUser.Id,
-                ExpiresAtUtc = DateTime.UtcNow.AddDays(jwtAuthOptions.RefreshTokenExpirationInDays)
+                UserId = appUser.Id,
+                ExpiresAtUtc = DateTime.UtcNow.AddDays(_jwtAuthOptions.RefreshTokenExpirationInDays)
             };
 
-            await identityDbContext.RefreshTokens.AddAsync(refreshToken);
-            await identityDbContext.SaveChangesAsync();
+            await appDbContext.RefreshTokens.AddAsync(refreshToken);
+            await appDbContext.SaveChangesAsync();
 
             return Ok(accessTokens);
         }
@@ -185,7 +177,7 @@ namespace Tabibi.API.Controllers
         {
             await validator.ValidateAndThrowAsync(refreshTokenDto);
 
-            RefreshToken? refreshToken = await identityDbContext.RefreshTokens
+            RefreshToken? refreshToken = await appDbContext.RefreshTokens
                 .Include(rt => rt.User)
                 .FirstOrDefaultAsync(rt => rt.Token == refreshTokenDto.RefreshToken);
 
@@ -208,9 +200,9 @@ namespace Tabibi.API.Controllers
             AccessTokensDto accessTokens = tokenProvider.Create(tokenRequest);
 
             refreshToken.Token = accessTokens.RefreshToken;
-            refreshToken.ExpiresAtUtc = DateTime.UtcNow.AddDays(jwtAuthOptions.RefreshTokenExpirationInDays);
+            refreshToken.ExpiresAtUtc = DateTime.UtcNow.AddDays(_jwtAuthOptions.RefreshTokenExpirationInDays);
 
-            await identityDbContext.SaveChangesAsync();
+            await appDbContext.SaveChangesAsync();
 
             return Ok(accessTokens);
         }
@@ -226,9 +218,9 @@ namespace Tabibi.API.Controllers
         {
             await validator.ValidateAndThrowAsync(emailConfirmationDto);
 
-            IdentityUser? identityUser = await userManager.FindByEmailAsync(emailConfirmationDto.Email);
+            ApplicationUser? appUser = await userManager.FindByEmailAsync(emailConfirmationDto.Email);
 
-            if (identityUser == null)
+            if (appUser == null)
             {
                 return Problem(
                     "Invalid email confirmation request",
@@ -236,7 +228,7 @@ namespace Tabibi.API.Controllers
             }
 
             bool isCodeValid = await userManager
-                .VerifyTwoFactorTokenAsync(identityUser, TokenOptions.DefaultEmailProvider, emailConfirmationDto.Code);
+                .VerifyTwoFactorTokenAsync(appUser, TokenOptions.DefaultEmailProvider, emailConfirmationDto.Code);
 
             if (!isCodeValid)
             {
@@ -245,8 +237,8 @@ namespace Tabibi.API.Controllers
                     statusCode: StatusCodes.Status400BadRequest);
             }
 
-            identityUser.EmailConfirmed = true;
-            IdentityResult updateResult = await userManager.UpdateAsync(identityUser);
+            appUser.EmailConfirmed = true;
+            IdentityResult updateResult = await userManager.UpdateAsync(appUser);
 
             if (!updateResult.Succeeded)
             {
@@ -269,19 +261,19 @@ namespace Tabibi.API.Controllers
         {
             await validator.ValidateAndThrowAsync(forgotPasswordDto);
 
-            IdentityUser? identityUser = await userManager.FindByEmailAsync(forgotPasswordDto.Email);
+            ApplicationUser? appUser = await userManager.FindByEmailAsync(forgotPasswordDto.Email);
 
-            if (identityUser == null)
+            if (appUser == null)
             {
                 return Problem(
                     "Invalid email forgot password request",
                     statusCode: StatusCodes.Status400BadRequest);
             }
 
-            string code = await userManager.GenerateTwoFactorTokenAsync(identityUser, TokenOptions.DefaultEmailProvider);
+            string code = await userManager.GenerateTwoFactorTokenAsync(appUser, TokenOptions.DefaultEmailProvider);
 
             string emailBody = $"Your password reset code is: {code}";
-            Message message = new([identityUser.Email!], "Reset password code", emailBody);
+            Message message = new([appUser.Email!], "Reset password code", emailBody);
 
             await emailSender.SendEmailAsync(message);
 
@@ -298,9 +290,9 @@ namespace Tabibi.API.Controllers
         {
             await validator.ValidateAndThrowAsync(verifyCodeDto);
 
-            IdentityUser? identityUser = await userManager.FindByEmailAsync(verifyCodeDto.Email);
+            ApplicationUser? appUser = await userManager.FindByEmailAsync(verifyCodeDto.Email);
 
-            if (identityUser == null)
+            if (appUser == null)
             {
                 return Problem(
                     "Invalid email verify-password-reset-code request",
@@ -308,7 +300,7 @@ namespace Tabibi.API.Controllers
             }
 
             bool isCodeValid = await userManager
-                .VerifyTwoFactorTokenAsync(identityUser, TokenOptions.DefaultEmailProvider, verifyCodeDto.Code);
+                .VerifyTwoFactorTokenAsync(appUser, TokenOptions.DefaultEmailProvider, verifyCodeDto.Code);
 
             if (!isCodeValid)
             {
@@ -318,7 +310,7 @@ namespace Tabibi.API.Controllers
             }
 
             // If code is valid, generate the *real* password reset token
-            string resetToken = await userManager.GeneratePasswordResetTokenAsync(identityUser);
+            string resetToken = await userManager.GeneratePasswordResetTokenAsync(appUser);
 
             return Ok(new ResetTokenResponseDto(resetToken));
         }
@@ -333,9 +325,9 @@ namespace Tabibi.API.Controllers
         {
             await validator.ValidateAndThrowAsync(resetPasswordDto);
 
-            IdentityUser? identityUser = await userManager.FindByEmailAsync(resetPasswordDto.Email);
+            ApplicationUser? appUser = await userManager.FindByEmailAsync(resetPasswordDto.Email);
 
-            if (identityUser == null)
+            if (appUser == null)
             {
                 return Problem(
                     "Invalid email reset-password request",
@@ -343,7 +335,7 @@ namespace Tabibi.API.Controllers
             }
 
             IdentityResult result = await userManager
-                .ResetPasswordAsync(identityUser, resetPasswordDto.Token, resetPasswordDto.Password);
+                .ResetPasswordAsync(appUser, resetPasswordDto.Token, resetPasswordDto.Password);
 
             if (!result.Succeeded)
             {
