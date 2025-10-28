@@ -1,5 +1,6 @@
 
 using Scalar.AspNetCore;
+using Tabibi.API.Configurations;
 using Tabibi.API.Extensions;
 
 namespace Tabibi.API
@@ -16,7 +17,8 @@ namespace Tabibi.API
                 .AddDatabase()
                 .AddApplicationServices()
                 .AddAuthenticationServices()
-                .AddEmailServices();
+                .AddEmailServices()
+                .AddCorsPolicy();
 
             var app = builder.Build();
 
@@ -31,6 +33,8 @@ namespace Tabibi.API
             app.UseHttpsRedirection();
 
             app.UseExceptionHandler();
+
+            app.UseCors(CorsOptions.PolicyName);
 
             app.UseAuthentication();
             app.UseAuthorization();
