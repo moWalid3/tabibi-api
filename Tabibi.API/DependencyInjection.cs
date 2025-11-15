@@ -1,6 +1,5 @@
 ﻿using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations;
@@ -79,13 +78,6 @@ namespace Tabibi.API
             builder.Services.AddSingleton(emailConfig);
 
             builder.Services.AddScoped<IEmailSender, EmailSender>();
-
-            builder.Services.Configure<FormOptions>(options =>
-            {
-                options.ValueLengthLimit = int.MaxValue;
-                options.MultipartBodyLengthLimit = int.MaxValue;
-                options.MemoryBufferThreshold = int.MaxValue;
-            });
 
             return builder;
         }

@@ -11,7 +11,7 @@ namespace Tabibi.API.Services
 {
     public sealed class TokenProvider(IOptions<JwtAuthOptions> options)
     {
-        private readonly JwtAuthOptions jwtAuthOptions = options.Value;
+        private readonly JwtAuthOptions _jwtAuthOptions = options.Value;
 
         public AccessTokensDto Create(TokenRequestDto tokenRequestDto)
         {
@@ -26,17 +26,17 @@ namespace Tabibi.API.Services
                 ..tokenRequestDto.Roles.Select(role => new Claim(ClaimTypes.Role, role))
             ];
 
-            SymmetricSecurityKey securityKey = new(Encoding.UTF8.GetBytes(jwtAuthOptions.Key));
+            SymmetricSecurityKey securityKey = new(Encoding.UTF8.GetBytes(_jwtAuthOptions.Key));
 
             SigningCredentials signingCredentials = new(securityKey, SecurityAlgorithms.HmacSha256);
 
             SecurityTokenDescriptor tokenDescriptor = new()
             {
-                Issuer = jwtAuthOptions.Issuer,
-                Audience = jwtAuthOptions.Audience,
+                Issuer = _jwtAuthOptions.Issuer,
+                Audience = _jwtAuthOptions.Audience,
                 Subject = new ClaimsIdentity(claims),
                 SigningCredentials = signingCredentials,
-                Expires = DateTime.UtcNow.AddMinutes(jwtAuthOptions.ExpirationInMinutes)
+                Expires = DateTime.UtcNow.AddMinutes(_jwtAuthOptions.ExpirationInMinutes)
             };
 
             string accessToken = new JsonWebTokenHandler().CreateToken(tokenDescriptor);

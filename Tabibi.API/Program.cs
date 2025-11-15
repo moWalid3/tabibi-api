@@ -1,4 +1,3 @@
-
 using Scalar.AspNetCore;
 using Tabibi.API.Configurations;
 using Tabibi.API.Extensions;
@@ -22,10 +21,7 @@ namespace Tabibi.API
 
             var app = builder.Build();
 
-            if (app.Environment.IsDevelopment())
-            {
-                await app.SeedInitialDataAsync();
-            }
+            await app.SeedInitialDataAsync();
 
             app.MapOpenApi();
             app.MapScalarApiReference();

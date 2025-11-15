@@ -211,7 +211,7 @@ namespace Tabibi.API.Controllers
         [HttpPost("email-confirmation")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> EmailConfirmation(
             EmailConfirmationDto emailConfirmationDto,
             IValidator<EmailConfirmationDto> validator)
@@ -244,7 +244,7 @@ namespace Tabibi.API.Controllers
             {
                 return Problem(
                     "An error occurred while confirming the email",
-                    statusCode: StatusCodes.Status500InternalServerError);
+                    statusCode: StatusCodes.Status400BadRequest);
             }
 
             return Ok();
@@ -339,16 +339,18 @@ namespace Tabibi.API.Controllers
 
             if (!result.Succeeded)
             {
-                IDictionary<string, string[]> errors = result.Errors
-                    .GroupBy(e => e.Code)
-                    .ToDictionary(
-                        g => g.Key.ToLower(),
-                        g => g.Select(e => e.Description).ToArray());
+                Dictionary<string, object?> extensions = new()
+                {
+                    {
+                        "errors",
+                        result.Errors.ToDictionary(e => e.Code, e => e.Description)
+                    }
+                };
 
                 return Problem(
                     "Invalid reset-password request",
                     statusCode: StatusCodes.Status400BadRequest,
-                    extensions: new Dictionary<string, object?>() { { "errors", errors } });
+                    extensions: extensions);
             }
 
             return Ok();

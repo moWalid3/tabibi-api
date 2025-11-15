@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Tabibi.API.Common;
+using Tabibi.API.Database;
 using Tabibi.API.Entities;
 
 namespace Tabibi.API.Extensions
@@ -9,6 +11,18 @@ namespace Tabibi.API.Extensions
         public static async Task SeedInitialDataAsync(this WebApplication app)
         {
             await using AsyncServiceScope scope = app.Services.CreateAsyncScope();
+
+            var serviceProvider = scope.ServiceProvider;
+
+            try
+            {
+                AppDbContext context = serviceProvider.GetRequiredService<AppDbContext>();
+                await context.Database.MigrateAsync();
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
 
             using RoleManager<IdentityRole> roleManager = scope.ServiceProvider
                 .GetRequiredService<RoleManager<IdentityRole>>();

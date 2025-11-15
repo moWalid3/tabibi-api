@@ -58,19 +58,6 @@ namespace Tabibi.EmailService
                     "
             };
 
-            if (message.Attachments != null && message.Attachments.Any())
-            {
-                byte[] fileBytes;
-                foreach (var attachment in message.Attachments)
-                {
-                    using (var ms = new MemoryStream())
-                    {
-                        attachment.CopyTo(ms);
-                        fileBytes = ms.ToArray();
-                    }
-                    bodyBuilder.Attachments.Add(attachment.FileName, fileBytes, ContentType.Parse(attachment.ContentType));
-                }
-            }
             emailMessage.Body = bodyBuilder.ToMessageBody();
             return emailMessage;
         }
