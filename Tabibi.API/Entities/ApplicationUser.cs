@@ -2,7 +2,7 @@
 
 namespace Tabibi.API.Entities
 {
-    public sealed class ApplicationUser : IdentityUser
+    public class ApplicationUser : IdentityUser
     {
         public required string Name { get; set; }
         public string? AvatarUrl { get; set; }

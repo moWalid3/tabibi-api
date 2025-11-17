@@ -46,13 +46,46 @@ namespace Tabibi.API.Controllers
                     statusCode: StatusCodes.Status409Conflict);
             }
 
-            ApplicationUser appUser = new()
+            ApplicationUser? appUser;
+
+            string? role;
+
+            switch (registerUserDto.Role)
             {
-                Name = registerUserDto.Name,
-                UserName = registerUserDto.Email,
-                Email = registerUserDto.Email,
-                CreatedAtUtc = DateTime.UtcNow
-            };
+                case RoleDto.Patient:
+                    appUser = new Patient()
+                    {
+                        Name = registerUserDto.Name,
+                        UserName = registerUserDto.Email,
+                        Email = registerUserDto.Email,
+                        CreatedAtUtc = DateTime.UtcNow
+                    };
+                    role = Roles.Patient;
+                    break;
+
+                case RoleDto.Doctor:
+                    appUser = new Doctor()
+                    {
+                        Name = registerUserDto.Name,
+                        UserName = registerUserDto.Email,
+                        Email = registerUserDto.Email,
+                        CreatedAtUtc = DateTime.UtcNow
+                    };
+                    role = Roles.Doctor;
+                    break;
+
+                default:
+                    role = null;
+                    appUser = null;
+                    break;
+            }
+
+            if (role == null || appUser == null)
+            {
+                return Problem(
+                    statusCode: StatusCodes.Status400BadRequest,
+                    detail: "Invalid Role");
+            }
 
             IdentityResult createUserResult = await userManager.CreateAsync(appUser, registerUserDto.Password);
 
@@ -70,20 +103,6 @@ namespace Tabibi.API.Controllers
                     detail: "Unable to register the user, please try again",
                     statusCode: StatusCodes.Status400BadRequest,
                     extensions: extensions);
-            }
-
-            string? role = registerUserDto.Role switch
-            {
-                RoleDto.Patient => Roles.Patient,
-                RoleDto.Doctor => Roles.Doctor,
-                _ => null
-            };
-
-            if (role == null)
-            {
-                return Problem(
-                    statusCode: StatusCodes.Status400BadRequest,
-                    detail: "Invalid Role");
             }
 
             IdentityResult addToRoleResult = await userManager.AddToRoleAsync(appUser, role);
