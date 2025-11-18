@@ -6,8 +6,10 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json.Serialization;
 using System.Text;
+using Tabibi.API.Common.Sorting;
 using Tabibi.API.Configurations;
 using Tabibi.API.Database;
+using Tabibi.API.DTOs.Departments;
 using Tabibi.API.Entities;
 using Tabibi.API.Middlewares;
 using Tabibi.API.Services;
@@ -63,7 +65,9 @@ namespace Tabibi.API
 
             builder.Services.AddScoped<TokenProvider>();
 
-            builder.Services.AddHttpContextAccessor();
+            builder.Services.AddTransient<SortMappingProvider>();
+            builder.Services.AddSingleton<ISortMappingDefinition, SortMappingDefinition<DepartmentDto, Department>>(
+                _ => DepartmentMappings.SortMapping);
 
             return builder;
         }

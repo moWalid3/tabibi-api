@@ -1,9 +1,19 @@
-﻿using Tabibi.API.Entities;
+﻿using Tabibi.API.Common.Sorting;
+using Tabibi.API.Entities;
 
 namespace Tabibi.API.DTOs.Departments
 {
     public static class DepartmentMappings
     {
+        public static readonly SortMappingDefinition<DepartmentDto, Department> SortMapping = new()
+        {
+            Mappings = [
+                new SortMapping(nameof(DepartmentDto.Name), nameof(Department.Name)),
+                new SortMapping(nameof(DepartmentDto.Description), nameof(Department.Description)),
+                new SortMapping(nameof(DepartmentDto.CreatedAtUtc), nameof(Department.CreatedAtUtc))
+            ]
+        };
+
         public static DepartmentDto ToDto(this Department department)
         {
             return new DepartmentDto

@@ -1,9 +1,11 @@
 ﻿using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Tabibi.API.Common.Sorting;
 using Tabibi.API.Database;
 using Tabibi.API.DTOs.Departments;
 using Tabibi.API.Entities;
+using Tabibi.API.Extensions;
 
 namespace Tabibi.API.Controllers
 {
@@ -12,12 +14,26 @@ namespace Tabibi.API.Controllers
     public sealed class DepartmentsController(AppDbContext dbContext) : ControllerBase
     {
         [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] DepartmentQueryParameters query)
+        public async Task<IActionResult> GetAll(
+            [FromQuery] DepartmentQueryParameters query,
+            SortMappingProvider sortMappingProvider)
         {
+            if (!sortMappingProvider.ValidateMappings<DepartmentDto, Department>(query.Sort))
+            {
+                return Problem(
+                    detail: $"The provided sort parameter is not valid: '{query.Sort}'",
+                    statusCode: StatusCodes.Status400BadRequest);
+            }
+
+            SortMapping[] sortMappings = sortMappingProvider.GetMappings<DepartmentDto, Department>();
+
+            query.Search ??= query.Search?.Trim().ToLower();
+
             List<DepartmentDto> departments = await dbContext.Departments
                 .Where(d => query.Search == null ||
                             d.Name.ToLower().Contains(query.Search) ||
                             (d.Description != null && d.Description.ToLower().Contains(query.Search)))
+                .ApplySort(query.Sort, sortMappings)
                 .Select(d => d.ToDto())
                 .ToListAsync();
 
