@@ -1,4 +1,4 @@
-﻿using Tabibi.API.Entities;
+﻿using Tabibi.API.Entities.Enums;
 
 namespace Tabibi.API.DTOs.Patients
 {

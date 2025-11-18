@@ -1,4 +1,4 @@
-﻿namespace Tabibi.API.Entities
+﻿namespace Tabibi.API.Entities.Enums
 {
     public enum Gender
     {

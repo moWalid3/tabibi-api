@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Tabibi.API.Entities.Enums;
 
 namespace Tabibi.API.Entities
 {
