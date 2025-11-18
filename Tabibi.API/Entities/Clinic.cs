@@ -10,7 +10,7 @@
         public double Longitude { get; set; }
         public required string PhoneNumber { get; set; }
 
-        public required string CityId { get; set; }
+        public Guid CityId { get; set; }
         public City? City { get; set; }
 
         public Doctor? Doctor { get; set; }

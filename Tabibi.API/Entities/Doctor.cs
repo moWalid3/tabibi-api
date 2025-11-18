@@ -8,7 +8,7 @@
         public string? CredentialImageUrl { get; set; }
         public int YearsOfExperience { get; set; }
 
-        public string? DepartmentId { get; set; }
+        public Guid? DepartmentId { get; set; }
         public Department? Department { get; set; }
 
         public Clinic? Clinic { get; set; }

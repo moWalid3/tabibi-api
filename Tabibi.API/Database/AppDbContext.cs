@@ -25,6 +25,7 @@ namespace Tabibi.API.Database
             builder.Entity<Clinic>().ToTable(nameof(Clinics), Schemas.Core);
             builder.Entity<Department>().ToTable(nameof(Departments), Schemas.Core);
             builder.Entity<City>().ToTable(nameof(Cities), Schemas.Core);
+            builder.Entity<WorkSchedule>().ToTable(nameof(WorkSchedules), Schemas.Core);
 
             builder.ApplyConfiguration(new ApplicationUserConfiguration());
             builder.ApplyConfiguration(new RefreshTokenConfiguration());
