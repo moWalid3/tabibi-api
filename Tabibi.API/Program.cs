@@ -30,6 +30,8 @@ namespace Tabibi.API
 
             app.UseExceptionHandler();
 
+            app.UseStaticFiles();
+
             app.UseCors(CorsOptions.PolicyName);
 
             app.UseAuthentication();

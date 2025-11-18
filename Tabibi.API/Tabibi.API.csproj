@@ -24,4 +24,8 @@
     <ProjectReference Include="..\Tabibi.EmailService\Tabibi.EmailService.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot\images\" />
+  </ItemGroup>
+
 </Project>
