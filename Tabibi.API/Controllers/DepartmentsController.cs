@@ -15,6 +15,9 @@ namespace Tabibi.API.Controllers
         public async Task<IActionResult> GetAll([FromQuery] DepartmentQueryParameters query)
         {
             List<DepartmentDto> departments = await dbContext.Departments
+                .Where(d => query.Search == null ||
+                            d.Name.ToLower().Contains(query.Search) ||
+                            (d.Description != null && d.Description.ToLower().Contains(query.Search)))
                 .Select(d => d.ToDto())
                 .ToListAsync();
 

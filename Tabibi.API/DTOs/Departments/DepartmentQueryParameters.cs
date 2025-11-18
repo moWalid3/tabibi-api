@@ -1,6 +1,10 @@
-﻿namespace Tabibi.API.DTOs.Departments
+﻿using Microsoft.AspNetCore.Mvc;
+
+namespace Tabibi.API.DTOs.Departments
 {
     public sealed record DepartmentQueryParameters
     {
+        [FromQuery(Name = "q")]
+        public string? Search { get; init; }
     }
 }
