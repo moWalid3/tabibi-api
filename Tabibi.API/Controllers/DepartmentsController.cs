@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Dynamic;
@@ -11,6 +12,7 @@ using Tabibi.API.Extensions;
 
 namespace Tabibi.API.Controllers
 {
+    [Authorize]
     [Route("departments")]
     [ApiController]
     public sealed class DepartmentsController(AppDbContext dbContext) : ControllerBase
@@ -102,6 +104,7 @@ namespace Tabibi.API.Controllers
             return Ok(shapedDepartmentDto);
         }
 
+        [Authorize(Roles = Roles.Admin)]
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -121,6 +124,7 @@ namespace Tabibi.API.Controllers
             return CreatedAtAction(nameof(GetById), new { id = departmentDto.Id }, departmentDto);
         }
 
+        [Authorize(Roles = Roles.Admin)]
         [HttpPut("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -147,6 +151,7 @@ namespace Tabibi.API.Controllers
             return NoContent();
         }
 
+        [Authorize(Roles = Roles.Admin)]
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
