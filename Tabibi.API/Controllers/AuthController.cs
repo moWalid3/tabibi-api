@@ -27,6 +27,7 @@ namespace Tabibi.API.Controllers
 
 
         [HttpPost("register")]
+        [EndpointDescription("Note: role: 1 = Patient, 2 = Doctor")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status409Conflict)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
