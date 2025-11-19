@@ -18,7 +18,10 @@ namespace Tabibi.API.DTOs.Departments
 
             RuleFor(d => d.ImageUrl)
                 .MaximumLength(300)
-                .WithMessage("Image url can not exceed 300 characters");
+                .WithMessage("Image url can not exceed 300 characters")
+                .Matches(@"^(?:(?:https?|ftp):\/\/)?(?:www\.)?[a-z0-9-]+(?:\.[a-z0-9-]+)+[^\s]*$")
+                .When(x => !string.IsNullOrWhiteSpace(x.ImageUrl))
+                .WithMessage("Image URL is not valid.");
         }
     }
 }
