@@ -1,6 +1,7 @@
 ﻿using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Tabibi.API.Common;
 using Tabibi.API.Common.Sorting;
 using Tabibi.API.Database;
 using Tabibi.API.DTOs.Departments;
@@ -29,15 +30,17 @@ namespace Tabibi.API.Controllers
 
             query.Search ??= query.Search?.Trim().ToLower();
 
-            List<DepartmentDto> departments = await dbContext.Departments
+            IQueryable<DepartmentDto> departmentsQuery = dbContext.Departments
                 .Where(d => query.Search == null ||
                             d.Name.ToLower().Contains(query.Search) ||
                             (d.Description != null && d.Description.ToLower().Contains(query.Search)))
                 .ApplySort(query.Sort, sortMappings)
-                .Select(d => d.ToDto())
-                .ToListAsync();
+                .Select(d => d.ToDto());
 
-            return Ok();
+            PaginationResult<DepartmentDto> result = await PaginationResult<DepartmentDto>
+                .CreateAsync(departmentsQuery, query.Page, query.PageSize);
+
+            return Ok(result);
         }
 
         [HttpGet("{id}")]
