@@ -22,8 +22,11 @@ namespace Tabibi.API.Controllers
         public async Task<IActionResult> GetAll(
             [FromQuery] DepartmentQueryParameters query,
             SortMappingProvider sortMappingProvider,
-            DataShapingProvider dataShapingProvider)
+            DataShapingProvider dataShapingProvider,
+            IValidator<DepartmentQueryParameters> validator)
         {
+            await validator.ValidateAndThrowAsync(query);
+
             if (!sortMappingProvider.ValidateMappings<DepartmentDto, Department>(query.Sort))
             {
                 return Problem(
