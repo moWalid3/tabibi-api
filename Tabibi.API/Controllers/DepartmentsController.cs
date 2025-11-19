@@ -16,6 +16,9 @@ namespace Tabibi.API.Controllers
     public sealed class DepartmentsController(AppDbContext dbContext) : ControllerBase
     {
         [HttpGet]
+        [EndpointDescription("Retrieves a paginated list of departments with optional searching, sorting and field selection.")]
+        [ProducesResponseType<PaginationResult<DepartmentDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> GetAll(
             [FromQuery] DepartmentQueryParameters query,
             SortMappingProvider sortMappingProvider,
@@ -65,6 +68,10 @@ namespace Tabibi.API.Controllers
         }
 
         [HttpGet("{id}")]
+        [EndpointDescription("Retrieves a specific department by its id with optional field selection.")]
+        [ProducesResponseType<DepartmentDto>(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetById(
             string id,
             string? fields,
@@ -93,6 +100,8 @@ namespace Tabibi.API.Controllers
         }
 
         [HttpPost]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Create(
             CreateDepartmentDto createDepartmentDto,
             IValidator<CreateDepartmentDto> validator)
@@ -110,6 +119,9 @@ namespace Tabibi.API.Controllers
         }
 
         [HttpPut("{id}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Update(
             string id,
             UpdateDepartmentDto updateDepartmentDto,
@@ -133,6 +145,8 @@ namespace Tabibi.API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(string id)
         {
             Department? department = await dbContext.Departments
