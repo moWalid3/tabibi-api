@@ -1,6 +1,7 @@
 ﻿using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Dynamic;
 using Tabibi.API.Common;
 using Tabibi.API.Common.Sorting;
 using Tabibi.API.Database;
@@ -17,12 +18,20 @@ namespace Tabibi.API.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll(
             [FromQuery] DepartmentQueryParameters query,
-            SortMappingProvider sortMappingProvider)
+            SortMappingProvider sortMappingProvider,
+            DataShapingProvider dataShapingProvider)
         {
             if (!sortMappingProvider.ValidateMappings<DepartmentDto, Department>(query.Sort))
             {
                 return Problem(
                     detail: $"The provided sort parameter is not valid: '{query.Sort}'",
+                    statusCode: StatusCodes.Status400BadRequest);
+            }
+
+            if (!dataShapingProvider.Validate<DepartmentDto>(query.Fields))
+            {
+                return Problem(
+                    detail: $"The provided data shaping fields are not valid: '{query.Fields}'",
                     statusCode: StatusCodes.Status400BadRequest);
             }
 
@@ -37,15 +46,37 @@ namespace Tabibi.API.Controllers
                 .ApplySort(query.Sort, sortMappings)
                 .Select(d => d.ToDto());
 
-            PaginationResult<DepartmentDto> result = await PaginationResult<DepartmentDto>
-                .CreateAsync(departmentsQuery, query.Page, query.PageSize);
+            int totalCount = await departmentsQuery.CountAsync();
+
+            List<DepartmentDto> departments = await departmentsQuery
+                .Skip((query.Page - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .ToListAsync();
+
+            PaginationResult<ExpandoObject> result = new()
+            {
+                Items = dataShapingProvider.ShapeCollectionData(departments, query.Fields),
+                Page = query.Page,
+                PageSize = query.PageSize,
+                TotalCount = totalCount
+            };
 
             return Ok(result);
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(string id)
+        public async Task<IActionResult> GetById(
+            string id,
+            string? fields,
+            DataShapingProvider dataShapingProvider)
         {
+            if (!dataShapingProvider.Validate<DepartmentDto>(fields))
+            {
+                return Problem(
+                    detail: $"The provided data shaping fields are not valid: '{fields}'",
+                    statusCode: StatusCodes.Status400BadRequest);
+            }
+
             Department? department = await dbContext.Departments.AsNoTracking()
                 .FirstOrDefaultAsync(d => d.Id.ToString() == id);
 
@@ -56,7 +87,9 @@ namespace Tabibi.API.Controllers
 
             DepartmentDto departmentDto = department.ToDto();
 
-            return Ok(departmentDto);
+            ExpandoObject shapedDepartmentDto = dataShapingProvider.ShapeData(departmentDto, fields);
+
+            return Ok(shapedDepartmentDto);
         }
 
         [HttpPost]
