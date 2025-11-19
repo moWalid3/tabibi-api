@@ -47,7 +47,7 @@ namespace Tabibi.API.Controllers
 
             query.Search ??= query.Search?.Trim().ToLower();
 
-            IQueryable<DepartmentDto> departmentsQuery = dbContext.Departments
+            IQueryable<DepartmentDto> departmentsQuery = dbContext.Departments.AsNoTracking()
                 .Where(d => query.Search == null ||
                             d.Name.ToLower().Contains(query.Search) ||
                             (d.Description != null && d.Description.ToLower().Contains(query.Search)))
