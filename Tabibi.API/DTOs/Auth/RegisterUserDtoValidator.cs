@@ -9,8 +9,8 @@ namespace Tabibi.API.DTOs.Auth
             RuleFor(u => u.Name)
                 .NotEmpty()
                 .WithMessage("Name must not be empty")
-                .MaximumLength(100)
-                .WithMessage("Name can not exceed 100 characters");
+                .MaximumLength(300)
+                .WithMessage("Name can not exceed 300 characters");
 
             RuleFor(u => u.Email)
                 .NotEmpty()
