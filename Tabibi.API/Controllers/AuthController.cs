@@ -9,6 +9,7 @@ using Tabibi.API.Configurations;
 using Tabibi.API.Database;
 using Tabibi.API.DTOs.Auth;
 using Tabibi.API.Entities;
+using Tabibi.API.Entities.Enums;
 using Tabibi.API.Services;
 using Tabibi.EmailService;
 
@@ -70,7 +71,8 @@ namespace Tabibi.API.Controllers
                         Name = registerUserDto.Name,
                         UserName = registerUserDto.Email,
                         Email = registerUserDto.Email,
-                        CreatedAtUtc = DateTime.UtcNow
+                        CreatedAtUtc = DateTime.UtcNow,
+                        Status = DoctorStatus.New
                     };
                     role = Roles.Doctor;
                     break;

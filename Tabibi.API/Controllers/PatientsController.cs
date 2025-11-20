@@ -11,24 +11,11 @@ using Tabibi.API.Entities;
 
 namespace Tabibi.API.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = Roles.Patient)]
     [Route("patients")]
     [ApiController]
-    public sealed class PatientsController(
-        UserManager<ApplicationUser> userManager,
-        AppDbContext dbContext) : ControllerBase
+    public sealed class PatientsController(AppDbContext dbContext) : ControllerBase
     {
-        [HttpGet]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetAll()
-        {
-            IList<ApplicationUser> patients = await userManager.GetUsersInRoleAsync(Roles.Patient);
-
-            IEnumerable<PatientDto> patientDtos = patients.Select(p => p.ToDto());
-
-            return Ok(new { Items = patientDtos });
-        }
-
         [HttpGet("me")]
         [EndpointDescription("Get my profile")]
         [ProducesResponseType<PatientProfileDto>(StatusCodes.Status200OK)]

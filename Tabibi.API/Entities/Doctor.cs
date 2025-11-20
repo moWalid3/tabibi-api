@@ -1,8 +1,10 @@
-﻿namespace Tabibi.API.Entities
+﻿using Tabibi.API.Entities.Enums;
+
+namespace Tabibi.API.Entities
 {
     public sealed class Doctor : ApplicationUser
     {
-        public bool IsApproved { get; set; }
+        public DoctorStatus Status { get; set; }
         public string? Bio { get; set; }
         public decimal ConsultationFee { get; set; }
         public string? CredentialImageUrl { get; set; }

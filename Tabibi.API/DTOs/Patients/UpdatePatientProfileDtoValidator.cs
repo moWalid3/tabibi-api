@@ -23,6 +23,15 @@ namespace Tabibi.API.DTOs.Patients
                 .IsInEnum()
                 .When(p => p.Gender != null)
                 .WithMessage("Gender is not valid");
+
+            RuleFor(p => p.DateOfBirth)
+                .LessThan(DateOnly.FromDateTime(DateTime.Today))
+                .When(p => p.DateOfBirth.HasValue)
+                .WithMessage("Date of birth must be in the past.");
+
+            RuleFor(p => p.CityId)
+                .NotEmpty()
+                .WithMessage("City must not be empty");
         }
     }
 }
