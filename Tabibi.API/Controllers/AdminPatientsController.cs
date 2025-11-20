@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Dynamic;
@@ -16,7 +17,9 @@ namespace Tabibi.API.Controllers
     [Authorize(Roles = Roles.Admin)]
     [Route("admin/patients")]
     [ApiController]
-    public sealed class AdminPatientsController(AppDbContext dbContext) : ControllerBase
+    public sealed class AdminPatientsController(
+        AppDbContext dbContext,
+        UserManager<ApplicationUser> userManager) : ControllerBase
     {
         [HttpGet]
         [ProducesResponseType<List<PatientDto>>(StatusCodes.Status200OK)]
@@ -73,6 +76,32 @@ namespace Tabibi.API.Controllers
             };
 
             return Ok(result);
+        }
+
+        [HttpDelete("{id}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> DeletePatient(string id)
+        {
+            Patient? patient = await dbContext.Users
+                .OfType<Patient>().FirstOrDefaultAsync(p => p.Id == id);
+
+            if (patient == null)
+            {
+                return NotFound();
+            }
+
+            IdentityResult result = await userManager.DeleteAsync(patient);
+
+            if (!result.Succeeded)
+            {
+                return Problem(
+                    detail: result.Errors.Select(e => e.Description).FirstOrDefault(),
+                    statusCode: StatusCodes.Status400BadRequest);
+            }
+
+            return NoContent();
         }
     }
 }
