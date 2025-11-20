@@ -42,7 +42,7 @@ namespace Tabibi.API.Extensions
 
         private static (string SortField, bool IsDescending) ParseSortField(string field)
         {
-            string[] parts = field.Split(',');
+            string[] parts = field.Split(' ');
 
             string sortField = parts[0];
 

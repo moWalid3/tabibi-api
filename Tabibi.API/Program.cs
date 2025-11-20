@@ -16,6 +16,7 @@ namespace Tabibi.API
                 .AddDatabase()
                 .AddApplicationServices()
                 .AddAuthenticationServices()
+                .AddSortServices()
                 .AddEmailServices()
                 .AddCorsPolicy();
 

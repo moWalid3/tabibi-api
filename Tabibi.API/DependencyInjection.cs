@@ -10,6 +10,7 @@ using Tabibi.API.Common;
 using Tabibi.API.Common.Sorting;
 using Tabibi.API.Configurations;
 using Tabibi.API.Database;
+using Tabibi.API.DTOs.AdminPatients;
 using Tabibi.API.DTOs.Departments;
 using Tabibi.API.Entities;
 using Tabibi.API.Middlewares;
@@ -66,11 +67,18 @@ namespace Tabibi.API
 
             builder.Services.AddScoped<TokenProvider>();
 
+            builder.Services.AddTransient<DataShapingProvider>();
+
+            return builder;
+        }
+
+        public static WebApplicationBuilder AddSortServices(this WebApplicationBuilder builder)
+        {
             builder.Services.AddTransient<SortMappingProvider>();
             builder.Services.AddSingleton<ISortMappingDefinition, SortMappingDefinition<DepartmentDto, Department>>(
                 _ => DepartmentMappings.SortMapping);
-
-            builder.Services.AddTransient<DataShapingProvider>();
+            builder.Services.AddSingleton<ISortMappingDefinition, SortMappingDefinition<PatientDto, Patient>>(
+                _ => AdminPatientsMappings.SortMapping);
 
             return builder;
         }

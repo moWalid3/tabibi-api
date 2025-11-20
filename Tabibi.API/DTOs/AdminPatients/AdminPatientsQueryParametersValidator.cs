@@ -1,0 +1,18 @@
+﻿using FluentValidation;
+
+namespace Tabibi.API.DTOs.AdminPatients
+{
+    public sealed class AdminPatientsQueryParametersValidator : AbstractValidator<AdminPatientsQueryParameters>
+    {
+        public AdminPatientsQueryParametersValidator()
+        {
+            RuleFor(x => x.Page)
+                .GreaterThan(0)
+                .WithMessage("Page must be greater than 0");
+
+            RuleFor(x => x.PageSize)
+                .InclusiveBetween(1, 1000)
+                .WithMessage("Page size must be between 1 and 1000");
+        }
+    }
+}
