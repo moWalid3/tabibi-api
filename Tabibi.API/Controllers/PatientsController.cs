@@ -24,8 +24,9 @@ namespace Tabibi.API.Controllers
         {
             string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            Patient? patient = await dbContext.Users
+            Patient? patient = await dbContext.Users.AsNoTracking()
                 .OfType<Patient>()
+                .Include(p => p.City)
                 .FirstOrDefaultAsync(p => p.Id == userId);
 
             if (patient == null)
@@ -60,15 +61,12 @@ namespace Tabibi.API.Controllers
                 return NotFound();
             }
 
-            if (updatePatientProfileDto.CityId != null)
-            {
-                bool cityExists = await dbContext.Cities.AsNoTracking()
-                    .AnyAsync(c => c.Id.ToString() == updatePatientProfileDto.CityId);
+            bool cityExists = await dbContext.Cities.AsNoTracking()
+                .AnyAsync(c => c.Id.ToString() == updatePatientProfileDto.CityId);
 
-                if (!cityExists)
-                {
-                    return Problem("Invalid city", statusCode: StatusCodes.Status400BadRequest);
-                }
+            if (!cityExists)
+            {
+                return Problem("Invalid city", statusCode: StatusCodes.Status400BadRequest);
             }
 
             patient.UpdateFromDto(updatePatientProfileDto);

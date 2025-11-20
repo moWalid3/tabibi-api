@@ -27,11 +27,13 @@ namespace Tabibi.API.Controllers
         {
             string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            Doctor? doctor = await dbContext.Users
+            Doctor? doctor = await dbContext.Users.AsNoTracking()
                 .OfType<Doctor>()
+                .Include(d => d.Department)
                 .Include(d => d.Clinic)
-                .ThenInclude(c => c!.Schedule)
-                .FirstOrDefaultAsync(d => d.Id == userId && d.Status == DoctorStatus.Approved);
+                .Include(d => d.Clinic!.Schedule)
+                .Include(d => d.Clinic!.City)
+                .FirstOrDefaultAsync(d => d.Id == userId && d.Status == DoctorStatus.Pending);
 
             if (doctor == null)
             {
@@ -50,7 +52,7 @@ namespace Tabibi.API.Controllers
         {
             string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            var doctorData = await dbContext.Users
+            var doctorData = await dbContext.Users.AsNoTracking()
                 .OfType<Doctor>()
                 .Where(d => d.Id == userId)
                 .Select(d => new { d.Status })
@@ -89,6 +91,22 @@ namespace Tabibi.API.Controllers
             if (doctor == null)
             {
                 return NotFound();
+            }
+
+            bool departmentExists = await dbContext.Departments.AsNoTracking()
+                .AnyAsync(d => d.Id.ToString() == updateDoctorProfileDto.DepartmentId);
+
+            if (!departmentExists)
+            {
+                return Problem("Invalid department", statusCode: StatusCodes.Status400BadRequest);
+            }
+
+            bool cityExists = await dbContext.Cities.AsNoTracking()
+                .AnyAsync(c => c.Id.ToString() == updateDoctorProfileDto.Clinic.CityId);
+
+            if (!cityExists)
+            {
+                return Problem("Invalid city", statusCode: StatusCodes.Status400BadRequest);
             }
 
             using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);

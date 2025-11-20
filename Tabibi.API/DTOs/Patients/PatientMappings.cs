@@ -1,4 +1,6 @@
-﻿using Tabibi.API.Entities;
+﻿using Tabibi.API.DTOs.Cities;
+using Tabibi.API.Entities;
+
 
 namespace Tabibi.API.DTOs.Patients
 {
@@ -13,7 +15,11 @@ namespace Tabibi.API.DTOs.Patients
                 AvatarUrl = patient.AvatarUrl,
                 Gender = patient.Gender,
                 DateOfBirth = patient.DateOfBirth,
-                CityId = patient.CityId,
+                City = patient.City == null ? null : new CityDto
+                {
+                    Id = patient.City!.Id,
+                    Name = patient.City!.Name
+                },
                 CreatedAtUtc = patient.CreatedAtUtc,
                 UpdatedAtUtc = patient.UpdatedAtUtc
             };

@@ -1,4 +1,6 @@
-﻿using Tabibi.API.Entities;
+﻿using Tabibi.API.DTOs.Cities;
+using Tabibi.API.DTOs.Departments;
+using Tabibi.API.Entities;
 using Tabibi.API.Entities.Enums;
 
 namespace Tabibi.API.DTOs.Doctors
@@ -17,22 +19,31 @@ namespace Tabibi.API.DTOs.Doctors
                 Bio = doctor.Bio,
                 ConsultationFee = doctor.ConsultationFee,
                 YearsOfExperience = doctor.YearsOfExperience,
-                DepartmentId = doctor.DepartmentId.ToString()!,
+                Department = new DepartmentDto
+                {
+                    Id = doctor.Department!.Id,
+                    Name = doctor.Department.Name,
+                    Description = doctor.Department.Description,
+                    ImageUrl = doctor.Department.ImageUrl,
+                    CreatedAtUtc = doctor.Department.CreatedAtUtc
+                },
                 CreatedAtUtc = doctor.CreatedAtUtc,
                 UpdatedAtUtc = doctor.UpdatedAtUtc,
-
-                Clinic = new ClinicDetailsDto
+                Clinic = new ClinicProfileDetailsDto
                 {
                     Name = doctor.Clinic!.Name,
-                    Description = doctor.Clinic!.Description,
-                    Address = doctor.Clinic!.Address,
-                    ImageUrl = doctor.Clinic!.ImageUrl,
-                    Latitude = doctor.Clinic!.Latitude,
-                    Longitude = doctor.Clinic!.Longitude,
-                    PhoneNumber = doctor.Clinic!.PhoneNumber,
-                    CityId = doctor.Clinic!.CityId.ToString()
+                    Description = doctor.Clinic.Description,
+                    Address = doctor.Clinic.Address,
+                    ImageUrl = doctor.Clinic.ImageUrl,
+                    Latitude = doctor.Clinic.Latitude,
+                    Longitude = doctor.Clinic.Longitude,
+                    PhoneNumber = doctor.Clinic.PhoneNumber,
+                    City = new CityDto
+                    {
+                        Id = doctor.Clinic.City!.Id,
+                        Name = doctor.Clinic.City.Name
+                    }
                 },
-                
                 Schedule = doctor.Clinic.Schedule.Select(s => new WorkScheduleDetailsDto
                 {
                     DayOfWeek = s.DayOfWeek,

@@ -1,4 +1,5 @@
-﻿using Tabibi.API.Entities.Enums;
+﻿using Tabibi.API.DTOs.Departments;
+using Tabibi.API.Entities.Enums;
 
 namespace Tabibi.API.DTOs.Doctors
 {
@@ -12,10 +13,10 @@ namespace Tabibi.API.DTOs.Doctors
         public string? Bio { get; init; }
         public decimal ConsultationFee { get; init; }
         public int YearsOfExperience { get; init; }
-        public required string DepartmentId { get; init; }
+        public required DepartmentDto Department { get; init; }
         public required DateTime CreatedAtUtc { get; init; }
         public DateTime? UpdatedAtUtc { get; init; }
-        public required ClinicDetailsDto Clinic { get; init; }
+        public required ClinicProfileDetailsDto Clinic { get; init; }
         public required List<WorkScheduleDetailsDto> Schedule { get; init; }
     }
 }
