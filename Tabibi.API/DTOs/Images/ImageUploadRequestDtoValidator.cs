@@ -16,8 +16,8 @@ namespace Tabibi.API.DTOs.Images
                     return allwedExtensions.Contains(extension);
                 })
                 .WithMessage("Only .png, .jpg, .jpeg extensions are allowed.")
-                .Must(file => file.Length <= 100 * 1024)
-                .WithMessage("Image size must be less than 100 KB.");
+                .Must(file => file.Length <= 500 * 1024)
+                .WithMessage("Image size must be less than 500 KB.");
         }
     }
 }
