@@ -128,5 +128,38 @@ namespace Tabibi.API.Controllers
 
             return Ok(doctorDetails);
         }
+
+        [HttpPut("{id}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateStatus(
+            string id,
+            AdminDoctorUpdateStatusDto dto,
+            IValidator<AdminDoctorUpdateStatusDto> validator)
+        {
+            await validator.ValidateAndThrowAsync(dto);
+
+            Doctor? doctor = await dbContext.Users
+                .OfType<Doctor>()
+                .FirstOrDefaultAsync(d => d.Id == id);
+
+            if (doctor == null)
+            {
+                return NotFound();
+            }
+
+            doctor.Status = dto.Status;
+
+            IdentityResult result = await userManager.UpdateAsync(doctor);
+
+            if (!result.Succeeded)
+            {
+                return Problem(result.Errors.FirstOrDefault()?.Description,
+                    statusCode: StatusCodes.Status400BadRequest);
+            }
+
+            return NoContent();
+        }
     }
 }
