@@ -9,7 +9,7 @@ namespace Tabibi.API.Controllers
     public sealed class ImagesController(IWebHostEnvironment environment) : ControllerBase
     {
         [HttpPost("upload")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType<ImageUploadResponse>(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Upload(
             [FromForm] ImageUploadRequestDto requestDto,
