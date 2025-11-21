@@ -1,4 +1,6 @@
 ﻿using Tabibi.API.Common.Sorting;
+using Tabibi.API.DTOs.Cities;
+using Tabibi.API.DTOs.Departments;
 using Tabibi.API.Entities;
 
 namespace Tabibi.API.DTOs.AdminDoctors
@@ -34,6 +36,7 @@ namespace Tabibi.API.DTOs.AdminDoctors
                 AvatarUrl = doctor.AvatarUrl,
                 Gender = doctor.Gender,
                 Status = doctor.Status.ToString(),
+                StatusCode = doctor.Status,
                 DateOfBirth = doctor.DateOfBirth,
                 ConsultationFee = doctor.ConsultationFee,
                 YearsOfExperience = doctor.YearsOfExperience,
@@ -41,6 +44,53 @@ namespace Tabibi.API.DTOs.AdminDoctors
                 Department = doctor.Department?.Name,
                 CreatedAtUtc = doctor.CreatedAtUtc,
                 UpdatedAtUtc = doctor.UpdatedAtUtc
+            };
+        }
+
+        public static AdminDoctorDetailsDto ToAdminDoctorDetailsDto(this Doctor doctor)
+        {
+            return new AdminDoctorDetailsDto
+            {
+                Id = doctor.Id,
+                Name = doctor.Name,
+                Email = doctor.Email!,
+                Status = doctor.Status.ToString(),
+                StatusCode = doctor.Status,
+                AvatarUrl = doctor.AvatarUrl,
+                Gender = doctor.Gender,
+                DateOfBirth = doctor.DateOfBirth,
+                Bio = doctor.Bio,
+                ConsultationFee = doctor.ConsultationFee,
+                YearsOfExperience = doctor.YearsOfExperience,
+                CredentialImageUrl = doctor.CredentialImageUrl,
+                CreatedAtUtc = doctor.CreatedAtUtc,
+                UpdatedAtUtc = doctor.UpdatedAtUtc,
+                Department = doctor.Department == null ? null : new DepartmentBasicDto
+                {
+                    Id = doctor.Department!.Id,
+                    Name = doctor.Department.Name
+                },
+                Clinic = doctor.Clinic == null ? null : new AdminDoctorClinicDto
+                {
+                    Name = doctor.Clinic!.Name,
+                    Description = doctor.Clinic.Description,
+                    Address = doctor.Clinic.Address,
+                    ImageUrl = doctor.Clinic.ImageUrl,
+                    Latitude = doctor.Clinic.Latitude,
+                    Longitude = doctor.Clinic.Longitude,
+                    PhoneNumber = doctor.Clinic.PhoneNumber,
+                    City = new CityDto
+                    {
+                        Id = doctor.Clinic.City!.Id,
+                        Name = doctor.Clinic.City.Name
+                    }
+                },
+                Schedule = doctor.Clinic?.Schedule.Select(s => new AdminDoctorWorkScheduleDto
+                {
+                    DayOfWeek = s.DayOfWeek,
+                    OpenTime = s.OpenTime,
+                    CloseTime = s.CloseTime
+                }).ToList()
             };
         }
     }

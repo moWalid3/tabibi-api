@@ -1,5 +1,4 @@
 ﻿using FluentValidation;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -106,5 +105,28 @@ namespace Tabibi.API.Controllers
             return Ok(result);
         }
 
+        [HttpGet("{id}")]
+        [ProducesResponseType<AdminDoctorDetailsDto>(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetDoctorDetails(string id)
+        {
+            Doctor? doctor = await dbContext.Users.AsNoTracking()
+                .OfType<Doctor>()
+                .Include(d => d.Department)
+                .Include(d => d.Clinic)
+                    .ThenInclude(c => c.City)
+                .Include(d => d.Clinic)
+                    .ThenInclude(c => c.Schedule)
+                .FirstOrDefaultAsync(d => d.Id == id);
+
+            if (doctor == null)
+            {
+                return NotFound();
+            }
+
+            AdminDoctorDetailsDto doctorDetails = doctor.ToAdminDoctorDetailsDto();
+
+            return Ok(doctorDetails);
+        }
     }
 }

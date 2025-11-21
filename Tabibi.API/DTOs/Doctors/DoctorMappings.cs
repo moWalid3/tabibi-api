@@ -19,13 +19,10 @@ namespace Tabibi.API.DTOs.Doctors
                 Bio = doctor.Bio,
                 ConsultationFee = doctor.ConsultationFee,
                 YearsOfExperience = doctor.YearsOfExperience,
-                Department = new DepartmentDto
+                Department = new DepartmentBasicDto
                 {
                     Id = doctor.Department!.Id,
                     Name = doctor.Department.Name,
-                    Description = doctor.Department.Description,
-                    ImageUrl = doctor.Department.ImageUrl,
-                    CreatedAtUtc = doctor.Department.CreatedAtUtc
                 },
                 CreatedAtUtc = doctor.CreatedAtUtc,
                 UpdatedAtUtc = doctor.UpdatedAtUtc,
