@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using Tabibi.API.DTOs.WorkSchedule;
 using Tabibi.API.Entities.Enums;
 
 namespace Tabibi.API.DTOs.Doctors
@@ -16,6 +17,6 @@ namespace Tabibi.API.DTOs.Doctors
         public int YearsOfExperience { get; init; }
         public required string DepartmentId { get; init; }
         public required ClinicDetailsDto Clinic { get; init; }
-        public required List<WorkScheduleDetailsDto> Schedule { get; init; }
+        public required List<WorkScheduleDto> Schedule { get; init; }
     }
 }

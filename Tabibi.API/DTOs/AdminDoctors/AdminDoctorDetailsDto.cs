@@ -1,5 +1,6 @@
-﻿using Tabibi.API.DTOs.Departments;
-using Tabibi.API.DTOs.Doctors;
+﻿using Tabibi.API.DTOs.Clinic;
+using Tabibi.API.DTOs.Departments;
+using Tabibi.API.DTOs.WorkSchedule;
 using Tabibi.API.Entities.Enums;
 
 namespace Tabibi.API.DTOs.AdminDoctors
@@ -21,7 +22,7 @@ namespace Tabibi.API.DTOs.AdminDoctors
         public required DateTime CreatedAtUtc { get; init; }
         public DateTime? UpdatedAtUtc { get; init; }
         public DepartmentBasicDto? Department { get; init; }
-        public AdminDoctorClinicDto? Clinic { get; init; }
-        public List<AdminDoctorWorkScheduleDto>? Schedule { get; init; }
+        public ClinicDto? Clinic { get; init; }
+        public List<WorkScheduleDto>? Schedule { get; init; }
     }
 }

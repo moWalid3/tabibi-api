@@ -9,7 +9,6 @@ using Tabibi.API.Common;
 using Tabibi.API.Database;
 using Tabibi.API.DTOs.Doctors;
 using Tabibi.API.Entities;
-using Tabibi.API.Entities.Enums;
 
 namespace Tabibi.API.Controllers
 {
@@ -20,20 +19,26 @@ namespace Tabibi.API.Controllers
         UserManager<ApplicationUser> userManager,
         AppDbContext dbContext) : ControllerBase
     {
-        [HttpGet("me")]
+        [HttpGet("profile")]
         [ProducesResponseType<DoctorProfileDto>(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetMyProfile()
+        public async Task<IActionResult> GetProfile(string? id)
         {
-            string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            string? userId = id;
+
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            }
 
             Doctor? doctor = await dbContext.Users.AsNoTracking()
                 .OfType<Doctor>()
                 .Include(d => d.Department)
                 .Include(d => d.Clinic)
-                .Include(d => d.Clinic!.Schedule)
-                .Include(d => d.Clinic!.City)
-                .FirstOrDefaultAsync(d => d.Id == userId && d.Status == DoctorStatus.Pending);
+                    .ThenInclude(c => c.City)
+                .Include(d => d.Clinic)
+                    .ThenInclude(c => c.Schedule)
+                .FirstOrDefaultAsync(d => d.Id == userId);
 
             if (doctor == null)
             {

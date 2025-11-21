@@ -1,6 +1,9 @@
-﻿namespace Tabibi.API.DTOs.AdminDoctors
+﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+
+namespace Tabibi.API.DTOs.WorkSchedule
 {
-    public sealed record AdminDoctorWorkScheduleDto
+    [ValidateNever]
+    public sealed record WorkScheduleDto
     {
         public DayOfWeek DayOfWeek { get; init; }
         public TimeSpan OpenTime { get; init; } // 09:00

@@ -1,5 +1,7 @@
 ﻿using Tabibi.API.DTOs.Cities;
+using Tabibi.API.DTOs.Clinic;
 using Tabibi.API.DTOs.Departments;
+using Tabibi.API.DTOs.WorkSchedule;
 using Tabibi.API.Entities;
 using Tabibi.API.Entities.Enums;
 
@@ -19,14 +21,14 @@ namespace Tabibi.API.DTOs.Doctors
                 Bio = doctor.Bio,
                 ConsultationFee = doctor.ConsultationFee,
                 YearsOfExperience = doctor.YearsOfExperience,
-                Department = new DepartmentBasicDto
+                Department = doctor.Department == null ? null : new DepartmentBasicDto
                 {
                     Id = doctor.Department!.Id,
                     Name = doctor.Department.Name,
                 },
                 CreatedAtUtc = doctor.CreatedAtUtc,
                 UpdatedAtUtc = doctor.UpdatedAtUtc,
-                Clinic = new ClinicProfileDetailsDto
+                Clinic = doctor.Clinic == null ? null : new ClinicDto
                 {
                     Name = doctor.Clinic!.Name,
                     Description = doctor.Clinic.Description,
@@ -41,7 +43,7 @@ namespace Tabibi.API.DTOs.Doctors
                         Name = doctor.Clinic.City.Name
                     }
                 },
-                Schedule = doctor.Clinic.Schedule.Select(s => new WorkScheduleDetailsDto
+                Schedule = doctor.Clinic?.Schedule.Select(s => new WorkScheduleDto
                 {
                     DayOfWeek = s.DayOfWeek,
                     OpenTime = s.OpenTime,
@@ -65,7 +67,7 @@ namespace Tabibi.API.DTOs.Doctors
             doctor.UpdatedAtUtc = DateTime.UtcNow;
         }
 
-        public static void UpdateFromDto(this Clinic clinic, ClinicDetailsDto dto)
+        public static void UpdateFromDto(this Entities.Clinic clinic, ClinicDetailsDto dto)
         {
             clinic.Name = dto.Name;
             clinic.Description = dto.Description;
@@ -78,9 +80,9 @@ namespace Tabibi.API.DTOs.Doctors
             clinic.Longitude = dto.Longitude;
         }
 
-        public static WorkSchedule ToEntity(this WorkScheduleDetailsDto dto, string doctorId)
+        public static Entities.WorkSchedule ToEntity(this WorkScheduleDto dto, string doctorId)
         {
-            return new WorkSchedule
+            return new Entities.WorkSchedule
             {
                 Id = Guid.CreateVersion7(),
                 DayOfWeek = dto.DayOfWeek,

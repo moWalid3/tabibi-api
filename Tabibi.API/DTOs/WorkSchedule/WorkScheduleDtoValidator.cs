@@ -1,10 +1,10 @@
 ﻿using FluentValidation;
 
-namespace Tabibi.API.DTOs.Doctors
+namespace Tabibi.API.DTOs.WorkSchedule
 {
-    public class WorkScheduleDetailsDtoValidator : AbstractValidator<WorkScheduleDetailsDto>
+    public class WorkScheduleDtoValidator : AbstractValidator<WorkScheduleDto>
     {
-        public WorkScheduleDetailsDtoValidator()
+        public WorkScheduleDtoValidator()
         {
             RuleFor(ws => ws.DayOfWeek)
                 .IsInEnum()

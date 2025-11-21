@@ -1,8 +1,8 @@
 ﻿using Tabibi.API.DTOs.Cities;
 
-namespace Tabibi.API.DTOs.Doctors
+namespace Tabibi.API.DTOs.Clinic
 {
-    public sealed record ClinicProfileDetailsDto
+    public sealed record ClinicDto
     {
         public required string Name { get; init; }
         public string? Description { get; init; }

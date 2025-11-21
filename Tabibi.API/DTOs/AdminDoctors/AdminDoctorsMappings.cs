@@ -1,6 +1,8 @@
 ﻿using Tabibi.API.Common.Sorting;
 using Tabibi.API.DTOs.Cities;
+using Tabibi.API.DTOs.Clinic;
 using Tabibi.API.DTOs.Departments;
+using Tabibi.API.DTOs.WorkSchedule;
 using Tabibi.API.Entities;
 
 namespace Tabibi.API.DTOs.AdminDoctors
@@ -70,7 +72,7 @@ namespace Tabibi.API.DTOs.AdminDoctors
                     Id = doctor.Department!.Id,
                     Name = doctor.Department.Name
                 },
-                Clinic = doctor.Clinic == null ? null : new AdminDoctorClinicDto
+                Clinic = doctor.Clinic == null ? null : new ClinicDto
                 {
                     Name = doctor.Clinic!.Name,
                     Description = doctor.Clinic.Description,
@@ -85,7 +87,7 @@ namespace Tabibi.API.DTOs.AdminDoctors
                         Name = doctor.Clinic.City.Name
                     }
                 },
-                Schedule = doctor.Clinic?.Schedule.Select(s => new AdminDoctorWorkScheduleDto
+                Schedule = doctor.Clinic?.Schedule.Select(s => new WorkScheduleDto
                 {
                     DayOfWeek = s.DayOfWeek,
                     OpenTime = s.OpenTime,
