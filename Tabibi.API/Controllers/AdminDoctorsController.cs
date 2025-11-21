@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,7 +14,7 @@ using Tabibi.API.Extensions;
 
 namespace Tabibi.API.Controllers
 {
-    //[Authorize(Roles = Roles.Admin)]
+    [Authorize(Roles = Roles.Admin)]
     [Route("admin/doctors")]
     [ApiController]
     public sealed class AdminDoctorsController(
@@ -152,6 +153,32 @@ namespace Tabibi.API.Controllers
             doctor.Status = dto.Status;
 
             IdentityResult result = await userManager.UpdateAsync(doctor);
+
+            if (!result.Succeeded)
+            {
+                return Problem(result.Errors.FirstOrDefault()?.Description,
+                    statusCode: StatusCodes.Status400BadRequest);
+            }
+
+            return NoContent();
+        }
+
+        [HttpDelete("{id}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> DeleteDoctor(string id)
+        {
+            Doctor? doctor = await dbContext.Users
+                .OfType<Doctor>()
+                .FirstOrDefaultAsync(d => d.Id == id);
+
+            if (doctor == null)
+            {
+                return NotFound();
+            }
+
+            IdentityResult result = await userManager.DeleteAsync(doctor);
 
             if (!result.Succeeded)
             {
