@@ -7,46 +7,46 @@ using System.Dynamic;
 using Tabibi.API.Common;
 using Tabibi.API.Common.Sorting;
 using Tabibi.API.Database;
+using Tabibi.API.DTOs.AdminDoctors;
 using Tabibi.API.DTOs.AdminPatients;
-using Tabibi.API.DTOs.Departments;
 using Tabibi.API.Entities;
 using Tabibi.API.Extensions;
 
 namespace Tabibi.API.Controllers
 {
-    [Authorize(Roles = Roles.Admin)]
-    [Route("admin/patients")]
+    //[Authorize(Roles = Roles.Admin)]
+    [Route("admin/doctors")]
     [ApiController]
-    public sealed class AdminPatientsController(
+    public sealed class AdminDoctorsController(
         AppDbContext dbContext,
         UserManager<ApplicationUser> userManager) : ControllerBase
     {
         [HttpGet]
-        [ProducesResponseType<List<AdminPatientDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<List<AdminDoctorDto>>(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> GetAllPatients(
-            AdminPatientsQueryParameters query,
+        public async Task<IActionResult> GetAllDoctors(
+            AdminDoctorsQueryParameters query,
             SortMappingProvider sortMappingProvider,
             DataShapingProvider dataShapingProvider,
-            IValidator<AdminPatientsQueryParameters> validator)
+            IValidator<AdminDoctorsQueryParameters> validator)
         {
             await validator.ValidateAndThrowAsync(query);
 
-            if (!sortMappingProvider.ValidateMappings<AdminPatientDto, Patient>(query.Sort))
+            if (!sortMappingProvider.ValidateMappings<AdminDoctorDto, Doctor>(query.Sort))
             {
                 return Problem(
                     detail: $"The provided sort parameter is not valid: '{query.Sort}'",
                     statusCode: StatusCodes.Status400BadRequest);
             }
 
-            if (!dataShapingProvider.Validate<AdminPatientDto>(query.Fields))
+            if (!dataShapingProvider.Validate<AdminDoctorDto>(query.Fields))
             {
                 return Problem(
                     detail: $"The provided data shaping fields are not valid: '{query.Fields}'",
                     statusCode: StatusCodes.Status400BadRequest);
             }
 
-            if(query.CityId != null)
+            if (query.CityId != null)
             {
                 bool cityExists = await dbContext.Cities.AnyAsync(c => c.Id.ToString() == query.CityId);
 
@@ -57,23 +57,40 @@ namespace Tabibi.API.Controllers
                 }
             }
 
+            if (query.DepartmentId != null)
+            {
+                bool departmentExists = await dbContext.Departments
+                    .AnyAsync(d => d.Id.ToString() == query.DepartmentId);
+
+                if (!departmentExists)
+                {
+                    return Problem("Invalid departmentId parameter",
+                        statusCode: StatusCodes.Status400BadRequest);
+                }
+            }
+
             query.Search ??= query.Search?.Trim().ToLower();
 
-            IQueryable<AdminPatientDto> patientsQuery = dbContext.Users.AsNoTracking()
-                .OfType<Patient>()
-                .Include(p => p.City)
+            IQueryable<AdminDoctorDto> patientsQuery = dbContext.Users.AsNoTracking()
+                .OfType<Doctor>()
+                .Include(p => p.Department)
+                .Include(p => p.Clinic)
+                .Include(p => p.Clinic!.City)
                 .Where(p => query.Search == null ||
                             p.Name.ToLower().Contains(query.Search) ||
-                            p.Email!.ToLower().Contains(query.Search))
+                            p.Email!.ToLower().Contains(query.Search) ||
+                            p.Bio!.ToLower().Contains(query.Search))
                 .Where(p => query.EmailConfirmed == null || p.EmailConfirmed == query.EmailConfirmed)
                 .Where(p => query.Gender == null || p.Gender == query.Gender)
-                .Where(p => query.CityId == null || p.CityId.ToString() == query.CityId)
-                .ApplySort(query.Sort, sortMappingProvider.GetMappings<AdminPatientDto, Patient>())
+                .Where(p => query.Status == null || p.Status == query.Status)
+                .Where(p => query.CityId == null || p.Clinic!.CityId.ToString() == query.CityId)
+                .Where(p => query.DepartmentId == null || p.DepartmentId.ToString() == query.DepartmentId)
+                .ApplySort(query.Sort, sortMappingProvider.GetMappings<AdminDoctorDto, Doctor>())
                 .Select(p => p.ToDto());
 
             int totalCount = await patientsQuery.CountAsync();
 
-            List<AdminPatientDto> patients = await patientsQuery
+            List<AdminDoctorDto> patients = await patientsQuery
                 .Skip((query.Page - 1) * query.PageSize)
                 .Take(query.PageSize)
                 .ToListAsync();
@@ -89,30 +106,5 @@ namespace Tabibi.API.Controllers
             return Ok(result);
         }
 
-        [HttpDelete("{id}")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> DeletePatient(string id)
-        {
-            Patient? patient = await dbContext.Users
-                .OfType<Patient>().FirstOrDefaultAsync(p => p.Id == id);
-
-            if (patient == null)
-            {
-                return NotFound();
-            }
-
-            IdentityResult result = await userManager.DeleteAsync(patient);
-
-            if (!result.Succeeded)
-            {
-                return Problem(
-                    detail: result.Errors.Select(e => e.Description).FirstOrDefault(),
-                    statusCode: StatusCodes.Status400BadRequest);
-            }
-
-            return NoContent();
-        }
     }
 }

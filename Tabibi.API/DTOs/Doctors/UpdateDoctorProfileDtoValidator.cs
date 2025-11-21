@@ -39,10 +39,11 @@ namespace Tabibi.API.DTOs.Doctors
                 .WithMessage("Consultation fee amount is invalid. It can not have more than 2 decimal places(e.g., 150.50) and must be less than 18 digits in total.");
 
             RuleFor(p => p.CredentialImageUrl)
+                .NotEmpty()
+                .WithMessage("Credential Image URL is required")
                 .MaximumLength(300)
                 .WithMessage("Credential image URL can not exceed 300 characters")
                 .Matches(@"^(?:(?:https?|ftp):\/\/)?(?:www\.)?[a-z0-9-]+(?:\.[a-z0-9-]+)+[^\s]*$")
-                .When(p => !string.IsNullOrWhiteSpace(p.CredentialImageUrl))
                 .WithMessage("Credential image URL is not valid.");
 
             RuleFor(p => p.YearsOfExperience)

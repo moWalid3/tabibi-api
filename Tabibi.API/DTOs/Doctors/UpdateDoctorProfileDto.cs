@@ -12,7 +12,7 @@ namespace Tabibi.API.DTOs.Doctors
         public DateOnly? DateOfBirth { get; init; }
         public string? Bio { get; init; }
         public decimal ConsultationFee { get; init; }
-        public string? CredentialImageUrl { get; init; }
+        public required string CredentialImageUrl { get; init; }
         public int YearsOfExperience { get; init; }
         public required string DepartmentId { get; init; }
         public required ClinicDetailsDto Clinic { get; init; }

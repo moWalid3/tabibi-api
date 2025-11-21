@@ -1,10 +1,10 @@
 ﻿using FluentValidation;
 
-namespace Tabibi.API.DTOs.AdminPatients
+namespace Tabibi.API.DTOs.AdminDoctors
 {
-    public sealed class AdminPatientsQueryParametersValidator : AbstractValidator<AdminPatientsQueryParameters>
+    public sealed class AdminDoctorsQueryParametersValidator : AbstractValidator<AdminDoctorsQueryParameters>
     {
-        public AdminPatientsQueryParametersValidator()
+        public AdminDoctorsQueryParametersValidator()
         {
             RuleFor(x => x.Page)
                 .GreaterThan(0)
@@ -18,6 +18,11 @@ namespace Tabibi.API.DTOs.AdminPatients
                 .IsInEnum()
                 .When(p => p.Gender != null)
                 .WithMessage("Gender is not valid");
+
+            RuleFor(p => p.Status)
+                .IsInEnum()
+                .When(p => p.Status != null)
+                .WithMessage("Status is not valid");
         }
     }
 }
