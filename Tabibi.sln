@@ -1,11 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.14.36616.10 d17.14
+# Visual Studio Version 18
+VisualStudioVersion = 18.0.11217.181 d18.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tabibi.API", "Tabibi.API\Tabibi.API.csproj", "{0794B612-8C71-4F67-800E-C048E473A824}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tabibi.EmailService", "Tabibi.EmailService\Tabibi.EmailService.csproj", "{68F45C13-CC97-4ADB-9525-CDDF8487C975}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tabibi.Gateway", "Tabibi.Gateway\Tabibi.Gateway.csproj", "{6626FAD3-A675-41FD-B80F-6C6F3CDBE5DB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{68F45C13-CC97-4ADB-9525-CDDF8487C975}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{68F45C13-CC97-4ADB-9525-CDDF8487C975}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{68F45C13-CC97-4ADB-9525-CDDF8487C975}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6626FAD3-A675-41FD-B80F-6C6F3CDBE5DB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6626FAD3-A675-41FD-B80F-6C6F3CDBE5DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6626FAD3-A675-41FD-B80F-6C6F3CDBE5DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6626FAD3-A675-41FD-B80F-6C6F3CDBE5DB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

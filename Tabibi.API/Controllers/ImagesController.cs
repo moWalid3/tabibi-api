@@ -1,9 +1,11 @@
 ﻿using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Tabibi.API.DTOs.Images;
 
 namespace Tabibi.API.Controllers
 {
+    [Authorize]
     [Route("images")]
     [ApiController]
     public sealed class ImagesController(IWebHostEnvironment environment) : ControllerBase

@@ -1,0 +1,163 @@
+{
+  "Routes": [
+    // ==========================================================================================
+    // 1. JAVA MICROSERVICE ROUTES (Heroku)
+    // Includes: Bookings, Reviews, Notifications
+    // Host: https://tabibi-b0a5ac088914.herokuapp.com
+    // ==========================================================================================
+    {
+      "DownstreamPathTemplate": "/api/auth/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "tabibi-b0a5ac088914.herokuapp.com",
+          "Port": 443
+        }
+      ],
+      "UpstreamPathTemplate": "/api/auth/{everything}",
+      "UpstreamHttpMethod": [ "GET" ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/bookings/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "tabibi-b0a5ac088914.herokuapp.com",
+          "Port": 443
+        }
+      ],
+      "UpstreamPathTemplate": "/api/bookings/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/reviews/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "tabibi-b0a5ac088914.herokuapp.com",
+          "Port": 443
+        }
+      ],
+      "UpstreamPathTemplate": "/api/reviews/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/notifications/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "tabibi-b0a5ac088914.herokuapp.com",
+          "Port": 443
+        }
+      ],
+      "UpstreamPathTemplate": "/api/notifications/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ]
+    },
+
+    // ==========================================================================================
+    // 2. .NET MICROSERVICE ROUTES (RunAsp.net)
+    // Includes: Auth, Doctors, Patients, Admin, Lookups, Images
+    // Host: https://tabibi.runasp.net
+    // ==========================================================================================
+
+    // --- Auth & Identity ---
+    {
+      "DownstreamPathTemplate": "/auth/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "tabibi.runasp.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamPathTemplate": "/auth/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT" ]
+    },
+
+    // --- Doctors ---
+    {
+      "DownstreamPathTemplate": "/doctors/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "tabibi.runasp.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamPathTemplate": "/doctors/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "PATCH" ]
+    },
+
+    // --- Patients ---
+    {
+      "DownstreamPathTemplate": "/patients/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "tabibi.runasp.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamPathTemplate": "/patients/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT" ]
+    },
+
+    // --- Admin ---
+    {
+      "DownstreamPathTemplate": "/admin/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "tabibi.runasp.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamPathTemplate": "/admin/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ]
+    },
+
+    // --- Lookups (Cities, Departments) ---
+    {
+      "DownstreamPathTemplate": "/cities/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "tabibi.runasp.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamPathTemplate": "/cities/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST" ]
+    },
+    {
+      "DownstreamPathTemplate": "/departments/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "tabibi.runasp.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamPathTemplate": "/departments/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST" ]
+    },
+
+    // --- Image Uploads ---
+    // Matches your controller route [Route("images")]
+    {
+      "DownstreamPathTemplate": "/images/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "tabibi.runasp.net",
+          "Port": 443
+        }
+      ],
+      "UpstreamPathTemplate": "/images/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST" ]
+    }
+  ],
+  "GlobalConfiguration": {
+    "BaseUrl": "https://localhost:7056"
+  }
+}
