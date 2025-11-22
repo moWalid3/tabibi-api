@@ -13,6 +13,7 @@ using Tabibi.API.Database;
 using Tabibi.API.DTOs.AdminDoctors;
 using Tabibi.API.DTOs.AdminPatients;
 using Tabibi.API.DTOs.Departments;
+using Tabibi.API.DTOs.Doctors;
 using Tabibi.API.Entities;
 using Tabibi.API.Middlewares;
 using Tabibi.API.Services;
@@ -82,6 +83,8 @@ namespace Tabibi.API
                 _ => AdminPatientsMappings.SortMapping);
             builder.Services.AddSingleton<ISortMappingDefinition, SortMappingDefinition<AdminDoctorDto, Doctor>>(
                 _ => AdminDoctorsMappings.SortMapping);
+            builder.Services.AddSingleton<ISortMappingDefinition, SortMappingDefinition<DoctorBasicDto, Doctor>>(
+                _ => DoctorMappings.SortMapping);
 
             return builder;
         }

@@ -73,20 +73,20 @@ namespace Tabibi.API.Controllers
 
             IQueryable<AdminDoctorDto> patientsQuery = dbContext.Users.AsNoTracking()
                 .OfType<Doctor>()
-                .Include(p => p.Department)
-                .Include(p => p.Clinic)
-                .Include(p => p.Clinic!.City)
-                .Where(p => query.Search == null ||
-                            p.Name.ToLower().Contains(query.Search) ||
-                            p.Email!.ToLower().Contains(query.Search) ||
-                            p.Bio!.ToLower().Contains(query.Search))
-                .Where(p => query.EmailConfirmed == null || p.EmailConfirmed == query.EmailConfirmed)
-                .Where(p => query.Gender == null || p.Gender == query.Gender)
-                .Where(p => query.Status == null || p.Status == query.Status)
-                .Where(p => query.CityId == null || p.Clinic!.CityId.ToString() == query.CityId)
-                .Where(p => query.DepartmentId == null || p.DepartmentId.ToString() == query.DepartmentId)
+                .Include(d => d.Department)
+                .Include(d => d.Clinic)
+                    .ThenInclude(c => c.City)
+                .Where(d => query.Search == null ||
+                            d.Name.ToLower().Contains(query.Search) ||
+                            d.Email!.ToLower().Contains(query.Search) ||
+                            d.Bio!.ToLower().Contains(query.Search))
+                .Where(d => query.EmailConfirmed == null || d.EmailConfirmed == query.EmailConfirmed)
+                .Where(d => query.Gender == null || d.Gender == query.Gender)
+                .Where(d => query.Status == null || d.Status == query.Status)
+                .Where(d => query.CityId == null || (d.Clinic != null && d.Clinic.CityId.ToString() == query.CityId))
+                .Where(d => query.DepartmentId == null || d.DepartmentId.ToString() == query.DepartmentId)
                 .ApplySort(query.Sort, sortMappingProvider.GetMappings<AdminDoctorDto, Doctor>())
-                .Select(p => p.ToDto());
+                .Select(d => d.ToDto());
 
             int totalCount = await patientsQuery.CountAsync();
 

@@ -1,4 +1,5 @@
-﻿using Tabibi.API.DTOs.Cities;
+﻿using Tabibi.API.Common.Sorting;
+using Tabibi.API.DTOs.Cities;
 using Tabibi.API.DTOs.Clinic;
 using Tabibi.API.DTOs.Departments;
 using Tabibi.API.DTOs.WorkSchedule;
@@ -9,6 +10,35 @@ namespace Tabibi.API.DTOs.Doctors
 {
     public static class DoctorMappings
     {
+        public static readonly SortMappingDefinition<DoctorBasicDto, Doctor> SortMapping = new()
+        {
+            Mappings = [
+                new SortMapping(nameof(DoctorBasicDto.Name), nameof(Doctor.Name)),
+                new SortMapping(nameof(Doctor.Gender), nameof(Doctor.Gender)),
+                new SortMapping(nameof(DoctorBasicDto.ConsultationFee), nameof(Doctor.ConsultationFee)),
+                new SortMapping(nameof(DoctorBasicDto.YearsOfExperience), nameof(Doctor.YearsOfExperience)),
+                new SortMapping(nameof(Doctor.Department),
+                    $"{nameof(Doctor.Department)}.{nameof(Doctor.Department.Name)}"),
+                new SortMapping(nameof(Doctor.Clinic.City),
+                    $"{nameof(Doctor.Clinic)}.{nameof(Doctor.Clinic.City)}.{nameof(Doctor.Clinic.City.Name)}"),
+                new SortMapping(nameof(Doctor.DateOfBirth), nameof(Doctor.DateOfBirth)),
+            ]
+        };
+
+        public static DoctorBasicDto ToDoctorBasicDto(this Doctor doctor)
+        {
+            return new DoctorBasicDto
+            {
+                Id = doctor.Id,
+                Name = doctor.Name,
+                AvatarUrl = doctor.AvatarUrl,
+                ConsultationFee = doctor.ConsultationFee,
+                YearsOfExperience = doctor.YearsOfExperience,
+                Department = doctor.Department?.Name,
+                Address = doctor.Clinic?.Address
+            };
+        }
+
         public static DoctorProfileDto ToDoctorProfileDto(this Doctor doctor)
         {
             return new DoctorProfileDto
