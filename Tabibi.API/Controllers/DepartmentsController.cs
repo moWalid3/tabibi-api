@@ -12,20 +12,20 @@ using Tabibi.API.Extensions;
 
 namespace Tabibi.API.Controllers
 {
-    [Authorize]
     [Route("departments")]
     [ApiController]
     public sealed class DepartmentsController(AppDbContext dbContext) : ControllerBase
     {
+        [Authorize]
         [HttpGet]
         [EndpointDescription("Retrieves a paginated list of departments with optional searching, sorting and field selection.")]
         [ProducesResponseType<PaginationResult<DepartmentDto>>(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> GetAll(
-            [FromQuery] DepartmentQueryParameters query,
-            SortMappingProvider sortMappingProvider,
-            DataShapingProvider dataShapingProvider,
-            IValidator<DepartmentQueryParameters> validator)
+                [FromQuery] DepartmentQueryParameters query,
+                SortMappingProvider sortMappingProvider,
+                DataShapingProvider dataShapingProvider,
+                IValidator<DepartmentQueryParameters> validator)
         {
             await validator.ValidateAndThrowAsync(query);
 
@@ -72,15 +72,16 @@ namespace Tabibi.API.Controllers
             return Ok(result);
         }
 
+        [Authorize]
         [HttpGet("{id}")]
         [EndpointDescription("Retrieves a specific department by its id with optional field selection.")]
         [ProducesResponseType<DepartmentDto>(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetById(
-            string id,
-            string? fields,
-            DataShapingProvider dataShapingProvider)
+                string id,
+                string? fields,
+                DataShapingProvider dataShapingProvider)
         {
             if (!dataShapingProvider.Validate<DepartmentDto>(fields))
             {

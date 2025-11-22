@@ -10,11 +10,11 @@ using Tabibi.API.Entities;
 
 namespace Tabibi.API.Controllers
 {
-    [Authorize]
     [Route("cities")]
     [ApiController]
     public class CitiesController(AppDbContext dbContext) : ControllerBase
     {
+        [Authorize]
         [HttpGet]
         [ProducesResponseType<List<CityDto>>(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -27,6 +27,7 @@ namespace Tabibi.API.Controllers
             return Ok(cities);
         }
 
+        [Authorize]
         [HttpGet("{id}")]
         [ProducesResponseType<CityDto>(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
