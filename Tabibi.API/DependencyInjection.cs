@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json.Serialization;
+using Stripe;
 using System.Text;
 using Tabibi.API.Common;
 using Tabibi.API.Common.Sorting;
@@ -68,8 +69,13 @@ namespace Tabibi.API
             builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
             builder.Services.AddScoped<TokenProvider>();
+            builder.Services.AddScoped<NotificationService>();
 
             builder.Services.AddTransient<DataShapingProvider>();
+
+            builder.Services.AddHostedService<BookingCleanupService>();
+
+            builder.Services.AddSignalR();
 
             return builder;
         }
@@ -132,6 +138,24 @@ namespace Tabibi.API
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtAuthOptions.Key))
                 };
+
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        // Look for token in query string (Standard for SignalR)
+                        var accessToken = context.Request.Query["access_token"];
+
+                        // If the request is for the Hub...
+                        var path = context.HttpContext.Request.Path;
+                        if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hub"))
+                        {
+                            // ...read the token from the query string
+                            context.Token = accessToken;
+                        }
+                        return Task.CompletedTask;
+                    }
+                };
             });
 
             builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
@@ -156,6 +180,13 @@ namespace Tabibi.API
                         .AllowAnyHeader();
                 });
             });
+
+            return builder;
+        }
+
+        public static WebApplicationBuilder AddStripe(this WebApplicationBuilder builder)
+        {
+            StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
 
             return builder;
         }

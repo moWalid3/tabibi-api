@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using Tabibi.API.Database.Configurations;
 using Tabibi.API.Entities;
 
 namespace Tabibi.API.Database
@@ -15,6 +14,12 @@ namespace Tabibi.API.Database
         public DbSet<Department> Departments { get; set; }
         public DbSet<City> Cities { get; set; }
         public DbSet<WorkSchedule> WorkSchedules { get; set; }
+        public DbSet<Booking> Bookings { get; set; }
+        public DbSet<Review> Reviews { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
+        public DbSet<ChatMessage> ChatMessages { get; set; }
+        public DbSet<Prescription> Prescriptions { get; set; }
+        public DbSet<PrescriptionItem> PrescriptionItems { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -26,15 +31,24 @@ namespace Tabibi.API.Database
             builder.Entity<Department>().ToTable(nameof(Departments), Schemas.Core);
             builder.Entity<City>().ToTable(nameof(Cities), Schemas.Core);
             builder.Entity<WorkSchedule>().ToTable(nameof(WorkSchedules), Schemas.Core);
+            builder.Entity<Booking>().ToTable(nameof(Bookings), Schemas.Core);
+            builder.Entity<Review>().ToTable(nameof(Reviews), Schemas.Core);
+            builder.Entity<Notification>().ToTable(nameof(Notifications), Schemas.Core);
+            builder.Entity<ChatMessage>().ToTable(nameof(ChatMessages), Schemas.Core);
+            builder.Entity<Prescription>().ToTable(nameof(Prescriptions), Schemas.Core);
+            builder.Entity<PrescriptionItem>().ToTable(nameof(PrescriptionItems), Schemas.Core);
 
-            builder.ApplyConfiguration(new ApplicationUserConfiguration());
-            builder.ApplyConfiguration(new RefreshTokenConfiguration());
-            builder.ApplyConfiguration(new DoctorConfiguration());
-            builder.ApplyConfiguration(new PatientConfiguration());
-            builder.ApplyConfiguration(new ClinicConfiguration());
-            builder.ApplyConfiguration(new DepartmentConfiguration());
-            builder.ApplyConfiguration(new CityConfiguration());
-            builder.ApplyConfiguration(new WorkScheduleConfiguration());
+            builder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+
+            //builder.ApplyConfiguration(new ApplicationUserConfiguration());
+            //builder.ApplyConfiguration(new RefreshTokenConfiguration());
+            //builder.ApplyConfiguration(new DoctorConfiguration());
+            //builder.ApplyConfiguration(new PatientConfiguration());
+            //builder.ApplyConfiguration(new ClinicConfiguration());
+            //builder.ApplyConfiguration(new DepartmentConfiguration());
+            //builder.ApplyConfiguration(new CityConfiguration());
+            //builder.ApplyConfiguration(new WorkScheduleConfiguration());
+            //builder.ApplyConfiguration(new BookingConfiguration());
         }
     }
 }

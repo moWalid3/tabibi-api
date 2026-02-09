@@ -3,7 +3,7 @@ using System.Linq.Dynamic.Core;
 
 namespace Tabibi.API.Common
 {
-    public sealed record PaginationResult<T> : ICollectionResponse<T>
+    public record PaginationResult<T> : ICollectionResponse<T>
     {
         public required List<T> Items { get; init; }
         public int Page { get; init; }

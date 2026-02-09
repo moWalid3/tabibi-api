@@ -2,6 +2,7 @@
 using Tabibi.API.DTOs.Cities;
 using Tabibi.API.DTOs.Clinic;
 using Tabibi.API.DTOs.Departments;
+using Tabibi.API.DTOs.Reviews;
 using Tabibi.API.DTOs.WorkSchedule;
 using Tabibi.API.Entities;
 using Tabibi.API.Entities.Enums;
@@ -78,8 +79,52 @@ namespace Tabibi.API.DTOs.Doctors
                     DayOfWeek = s.DayOfWeek,
                     OpenTime = s.OpenTime,
                     CloseTime = s.CloseTime
-                }).ToList()
+                }).ToList() ?? []
             };
+        }
+
+        public static DoctorDetailsDto ToDoctorDetailsDto(
+            this Doctor doctor,
+            double rating,
+            int reviewCount,
+            int patientCount,
+            List<ReviewDto> reviews)
+        {
+            return new DoctorDetailsDto
+            {
+                Id = doctor.Id,
+                Name = doctor.Name,
+                AvatarUrl = doctor.AvatarUrl,
+                Bio = doctor.Bio,
+                ConsultationFee = doctor.ConsultationFee,
+                YearsOfExperience = doctor.YearsOfExperience,
+                Department = doctor.Department?.Name,
+                Address = doctor.Clinic?.Address,
+                Rating = rating,
+                ReviewCount = reviewCount,
+                PatientCount = patientCount,
+                Reviews = reviews,
+                Schedule = doctor.Clinic?.Schedule.Select(s => new WorkScheduleDto
+                {
+                    DayOfWeek = s.DayOfWeek,
+                    OpenTime = s.OpenTime,
+                    CloseTime = s.CloseTime
+                }).ToList() ?? []
+            };
+        }
+
+        public static DoctorMapPinDto ToDoctorMapPinDto(this Doctor doctor)
+        {
+            return new DoctorMapPinDto(
+                doctor.Id,
+                doctor.Name,
+                doctor.Department?.Name,
+                doctor.Clinic?.Name,
+                doctor.Clinic.Latitude,
+                doctor.Clinic.Longitude,
+                doctor.AvatarUrl,
+                doctor.ConsultationFee
+            );
         }
 
         public static void UpdateFromDto(this Doctor doctor, UpdateDoctorProfileDto dto)

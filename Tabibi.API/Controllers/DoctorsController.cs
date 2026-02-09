@@ -10,6 +10,7 @@ using Tabibi.API.Common;
 using Tabibi.API.Common.Sorting;
 using Tabibi.API.Database;
 using Tabibi.API.DTOs.Doctors;
+using Tabibi.API.DTOs.Reviews;
 using Tabibi.API.Entities;
 using Tabibi.API.Entities.Enums;
 using Tabibi.API.Extensions;
@@ -107,6 +108,38 @@ namespace Tabibi.API.Controllers
             return Ok(result);
         }
 
+
+        [Authorize(Roles = Roles.Patient)]
+        [HttpGet("map")]
+        [ProducesResponseType<List<DoctorMapPinDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> GetDoctorsOnMap(
+            double minLat,
+            double maxLat,
+            double minLng,
+            double maxLng)
+        {
+            if (minLat >= maxLat || minLng >= maxLng)
+            {
+                return BadRequest("Invalid map coordinates. Min must be less than Max.");
+            }
+
+            IQueryable<Doctor> query = dbContext.Users.OfType<Doctor>()
+                .Include(d => d.Clinic)
+                .Include(d => d.Department)
+                .Where(d => d.Status == DoctorStatus.Approved)
+                .Where(d => d.Clinic != null)
+                .Where(d => d.Clinic.Latitude >= minLat && d.Clinic.Latitude <= maxLat)
+                .Where(d => d.Clinic.Longitude >= minLng && d.Clinic.Longitude <= maxLng);
+
+            List<DoctorMapPinDto> mapPins = await query
+                .Select(d => d.ToDoctorMapPinDto())
+                .ToListAsync();
+
+            return Ok(mapPins);
+        }
+
+
         [Authorize(Roles = $"{Roles.Doctor},{Roles.Patient}")]
         [HttpGet("profile")]
         [ProducesResponseType<DoctorProfileDto>(StatusCodes.Status200OK)]
@@ -139,6 +172,59 @@ namespace Tabibi.API.Controllers
             return Ok(doctorProfile);
         }
 
+
+        [Authorize(Roles = Roles.Patient)]
+        [HttpGet("doctor-details/{id}")]
+        [ProducesResponseType<DoctorDetailsDto>(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetDoctorDetails(string id)
+        {
+            Doctor? doctor = await dbContext.Users.OfType<Doctor>()
+                .Include(d => d.Department)
+                .Include(d => d.Clinic)
+                    .ThenInclude(c => c.Schedule)
+                .AsSplitQuery()
+                .FirstOrDefaultAsync(d => d.Id == id);
+
+            if (doctor == null)
+            {
+                return NotFound();
+            }
+
+            List<ReviewDto> recentReviews = await dbContext.Reviews
+                .Include(r => r.Patient)
+                .Where(r => r.DoctorId == id)
+                .OrderByDescending(r => r.CreatedAt)
+                .Take(3)
+                .Select(r => r.ToDto())
+                .ToListAsync();
+
+            var stats = await dbContext.Reviews
+                .Where(r => r.DoctorId == id)
+                .GroupBy(r => 1) // Fake grouping to aggregate all rows
+                .Select(g => new
+                {
+                    AverageRating = g.Average(r => r.Rating),
+                    TotalCount = g.Count()
+                })
+                .FirstOrDefaultAsync();
+
+            int patientCount = await dbContext.Bookings
+                .Where(b => b.DoctorId == id && b.Status == BookingStatus.Completed)
+                .Select(b => b.PatientId)
+                .Distinct()
+                .CountAsync();
+
+            DoctorDetailsDto result = doctor.ToDoctorDetailsDto(
+                rating: stats?.AverageRating ?? 0,
+                reviewCount: stats?.TotalCount ?? 0,
+                patientCount: patientCount,
+                reviews: recentReviews);
+
+            return Ok(result);
+        }
+
+
         [Authorize(Roles = Roles.Doctor)]
         [HttpGet("me/status")]
         [ProducesResponseType<GetDoctorStatusResponseDto>(StatusCodes.Status200OK)]
@@ -164,6 +250,7 @@ namespace Tabibi.API.Controllers
 
             return Ok(result);
         }
+
 
         [Authorize(Roles = Roles.Doctor)]
         [HttpPut("me")]

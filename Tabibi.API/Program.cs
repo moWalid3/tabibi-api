@@ -1,6 +1,7 @@
 using Scalar.AspNetCore;
 using Tabibi.API.Configurations;
 using Tabibi.API.Extensions;
+using Tabibi.API.Hubs;
 
 namespace Tabibi.API
 {
@@ -18,7 +19,8 @@ namespace Tabibi.API
                 .AddAuthenticationServices()
                 .AddSortServices()
                 .AddEmailServices()
-                .AddCorsPolicy();
+                .AddCorsPolicy()
+                .AddStripe();
 
             var app = builder.Build();
 
@@ -39,6 +41,8 @@ namespace Tabibi.API
             app.UseAuthorization();
 
             app.MapControllers();
+
+            app.MapHub<MainHub>("/hub");
 
             app.Run();
         }
