@@ -117,11 +117,24 @@ namespace Tabibi.API.Controllers
             double minLat,
             double maxLat,
             double minLng,
-            double maxLng)
+            double maxLng,
+            string? departmentId)
         {
             if (minLat >= maxLat || minLng >= maxLng)
             {
                 return BadRequest("Invalid map coordinates. Min must be less than Max.");
+            }
+
+            if (departmentId != null)
+            {
+                bool departmentExists = await dbContext.Departments
+                    .AnyAsync(d => d.Id.ToString() == departmentId);
+
+                if (!departmentExists)
+                {
+                    return Problem("Invalid departmentId parameter",
+                        statusCode: StatusCodes.Status400BadRequest);
+                }
             }
 
             IQueryable<Doctor> query = dbContext.Users.OfType<Doctor>()
@@ -130,7 +143,8 @@ namespace Tabibi.API.Controllers
                 .Where(d => d.Status == DoctorStatus.Approved)
                 .Where(d => d.Clinic != null)
                 .Where(d => d.Clinic.Latitude >= minLat && d.Clinic.Latitude <= maxLat)
-                .Where(d => d.Clinic.Longitude >= minLng && d.Clinic.Longitude <= maxLng);
+                .Where(d => d.Clinic.Longitude >= minLng && d.Clinic.Longitude <= maxLng)
+                .Where(d => departmentId == null || d.DepartmentId.ToString() == departmentId);
 
             List<DoctorMapPinDto> mapPins = await query
                 .Select(d => d.ToDoctorMapPinDto())
