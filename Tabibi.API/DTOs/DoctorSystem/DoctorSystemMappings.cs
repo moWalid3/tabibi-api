@@ -29,6 +29,18 @@ namespace Tabibi.API.DTOs.DoctorSystem
             );
         }
 
+        public static TransactionItemDto ToTransactionItemDto(this Booking b)
+        {
+            return new TransactionItemDto(
+                b.Id,
+                b.Patient.Name,
+                b.Patient.AvatarUrl,
+                b.AppointmentDate.ToString("MMM dd, yyyy"),
+                b.PricePaid,
+                b.Type
+            );
+        }
+
         public static PatientAppointmentDetailsDto ToPatientAppointmentDetailsDto(this Patient patient)
         {
             return new PatientAppointmentDetailsDto(

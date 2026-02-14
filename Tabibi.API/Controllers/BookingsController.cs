@@ -273,6 +273,7 @@ namespace Tabibi.API.Controllers
         {
             Booking? booking = await dbContext.Bookings
                 .Include(b => b.Patient)
+                .Include(b => b.Doctor)
                 .FirstOrDefaultAsync(b => b.Id == id);
 
             if (booking == null)
@@ -320,6 +321,14 @@ namespace Tabibi.API.Controllers
                 booking.DoctorId,
                 "New Appointment!",
                 $"Appointment confirmed: {booking.Patient?.Name} at {booking.AppointmentDate:g}",
+                NotificationType.BookingAlert,
+                booking.Id
+            );
+
+            await notificationService.SendNotificationAsync(
+                booking.PatientId,
+                "New Appointment!",
+                $"You have successfully booked an appointment with Dr. {booking.Doctor?.Name} at {booking.AppointmentDate:g}",
                 NotificationType.BookingAlert,
                 booking.Id
             );

@@ -340,158 +340,163 @@ namespace Tabibi.API.Controllers
             dbContext.Prescriptions.Remove(prescription);
             await dbContext.SaveChangesAsync();
 
+            await notificationService.SendNotificationAsync(
+                prescription.Booking?.PatientId,
+                "Prescription Deleted",
+                "Dr. has deleted your prescription.",
+                NotificationType.System,
+                prescription.Id
+            );
+
             return Ok();
         }
 
 
-        [HttpGet("earnings")]
-        [ProducesResponseType<EarningsPageDto>(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetEarnings([FromQuery] string period = "month")
+        [HttpGet("earnings/summary")]
+        [ProducesResponseType<EarningsSummaryDto>(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetEarningsSummary()
         {
-            var doctorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var now = DateTime.UtcNow;
+            string? doctorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            DateTime now = DateTime.UtcNow;
 
-            // --- 1. LIFETIME STATS (The Dark Card) ---
-            // These numbers don't change when you click the filter tabs
+            IQueryable<Booking> completedBookings = dbContext.Bookings
+                .Where(b => b.DoctorId == doctorId && b.Status == BookingStatus.Completed);
 
-            // A. Lifetime Total
-            var lifetimeEarnings = await dbContext.Bookings
-                .Where(b => b.DoctorId == doctorId && b.Status == BookingStatus.Completed)
+            decimal totalEarnings = await completedBookings.SumAsync(b => b.PricePaid);
+
+            int totalConsultations = await completedBookings.CountAsync();
+            decimal averagePerVisit = totalConsultations > 0
+                ? totalEarnings / totalConsultations
+                : 0;
+
+            DateTime startOfThisMonth = new(now.Year, now.Month, 1);
+            decimal thisMonthEarnings = await completedBookings
+                .Where(b => b.AppointmentDate >= startOfThisMonth)
                 .SumAsync(b => b.PricePaid);
 
-            // B. Current Month Stats
-            var startOfThisMonth = new DateTime(now.Year, now.Month, 1);
-            var thisMonthEarnings = await dbContext.Bookings
-                .Where(b => b.DoctorId == doctorId &&
-                            b.Status == BookingStatus.Completed &&
-                            b.AppointmentDate >= startOfThisMonth)
+            DateTime startOfLastMonth = startOfThisMonth.AddMonths(-1);
+            decimal lastMonthEarnings = await completedBookings
+                .Where(b => b.AppointmentDate >= startOfLastMonth && b.AppointmentDate < startOfThisMonth)
                 .SumAsync(b => b.PricePaid);
 
-            // C. Commission Logic (Example: 10% Platform Fee)
-            decimal commissionRate = 0.10m;
-            decimal appCommission = thisMonthEarnings * commissionRate;
-
-            // D. Growth Calculation (This Month vs Last Month)
-            var startOfLastMonth = startOfThisMonth.AddMonths(-1);
-            var endOfLastMonth = startOfThisMonth.AddTicks(-1);
-
-            var lastMonthEarnings = await dbContext.Bookings
-                .Where(b => b.DoctorId == doctorId &&
-                            b.Status == BookingStatus.Completed &&
-                            b.AppointmentDate >= startOfLastMonth &&
-                            b.AppointmentDate <= endOfLastMonth)
-                .SumAsync(b => b.PricePaid);
-
-            double growthPercentage = 0;
+            double growth = 0;
             if (lastMonthEarnings > 0)
             {
-                // Formula: ((New - Old) / Old) * 100
-                growthPercentage = (double)((thisMonthEarnings - lastMonthEarnings) / lastMonthEarnings) * 100;
+                growth = (double)((thisMonthEarnings - lastMonthEarnings) / lastMonthEarnings) * 100;
             }
             else if (thisMonthEarnings > 0)
             {
-                growthPercentage = 100; // 100% growth if started from 0
+                growth = 100;
             }
 
+            decimal commissionRate = 0.10m;
 
-            // --- 2. FILTERED DATA (Reactive to Tabs) ---
+            DateTime weekStartDate = now.AddDays(-7);
 
-            DateTime filterStartDate;
-            string dateFormat; // How to group chart data (Day vs Month)
+            List<Booking> weeklyData = await completedBookings
+                .Where(b => b.AppointmentDate >= weekStartDate)
+                .ToListAsync();
+
+            List<ChartDataPointDto> chartData = weeklyData
+                .GroupBy(b => b.AppointmentDate.ToString("ddd")) // "Mon", "Tue"
+                .Select(g => new ChartDataPointDto(g.Key, g.Sum(b => b.PricePaid)))
+                .ToList();
+
+            List<TransactionItemDto> recentTransactions = await dbContext.Bookings
+                .Include(b => b.Patient)
+                .Where(b => b.DoctorId == doctorId && b.Status == BookingStatus.Completed)
+                .OrderByDescending(b => b.AppointmentDate)
+                .Take(3)
+                .Select(b => b.ToTransactionItemDto())
+                .ToListAsync();
+
+            EarningsSummaryDto result = new(
+                TotalLifetimeEarnings: totalEarnings,
+                ThisMonthEarnings: thisMonthEarnings,
+                AppCommission: thisMonthEarnings * commissionRate,
+                GrowthPercentage: Math.Round(growth, 1),
+                TotalConsultations: totalConsultations,
+                AveragePerVisit: Math.Round(averagePerVisit, 2),
+                WeeklyChartData: chartData,
+                RecentTransactions: recentTransactions
+            );
+
+            return Ok(result);
+        }
+
+
+        [HttpGet("earnings/analytics")]
+        [ProducesResponseType<List<ChartDataPointDto>>(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetEarningsAnalytics([FromQuery] string period = "month")
+        {
+            string? doctorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            DateTime now = DateTime.UtcNow;
+
+            DateTime startDate;
+            string dateFormat;
 
             switch (period.ToLower())
             {
                 case "week":
-                    filterStartDate = now.AddDays(-7); // Last 7 days
-                    dateFormat = "ddd"; // Mon, Tue...
+                    startDate = now.AddDays(-7);
+                    dateFormat = "ddd";
                     break;
                 case "year":
-                    filterStartDate = now.AddYears(-1); // Last 12 months
-                    dateFormat = "MMM"; // Jan, Feb...
+                    startDate = now.AddYears(-1);
+                    dateFormat = "MMM";
                     break;
                 case "month":
                 default:
-                    filterStartDate = new DateTime(now.Year, now.Month, 1); // This month
-                    dateFormat = "dd MMM"; // 01 Jan, 02 Jan...
+                    startDate = new DateTime(now.Year, now.Month, 1);
+                    dateFormat = "dd MMM";
                     break;
             }
 
-            var filteredBookings = await dbContext.Bookings
-                .Include(b => b.Patient)
+            List<Booking> bookings = await dbContext.Bookings
                 .Where(b => b.DoctorId == doctorId &&
                             b.Status == BookingStatus.Completed &&
-                            b.AppointmentDate >= filterStartDate)
-                .OrderBy(b => b.AppointmentDate)
+                            b.AppointmentDate >= startDate)
                 .ToListAsync();
 
-            // E. Quick Stats
-            int consultations = filteredBookings.Count;
-            decimal avgPerVisit = consultations > 0
-                ? filteredBookings.Average(b => b.PricePaid)
-                : 0;
-
-            // F. Chart Data (Grouping)
-            // Group by Date to create points for the line graph
-            var chartData = filteredBookings
+            List<ChartDataPointDto> chartData = bookings
                 .GroupBy(b => b.AppointmentDate.ToString(dateFormat))
-                .Select(g => new ChartDataPointDto(
-                    Label: g.Key,
-                    Amount: g.Sum(b => b.PricePaid)
-                ))
+                .Select(g => new ChartDataPointDto(g.Key, g.Sum(b => b.PricePaid)))
                 .ToList();
 
-            // G. Recent Transactions List (Bottom of screen)
-            var transactions = filteredBookings
-                .OrderByDescending(b => b.AppointmentDate)
-                .Take(5)
-                .Select(b => new TransactionItemDto(
-                    PatientName: b.Patient.Name,
-                    Date: b.AppointmentDate.ToString("MMM dd, yyyy"),
-                    Amount: b.PricePaid,
-                    Status: "Paid"
-                ))
-                .ToList();
+            return Ok(chartData);
+        }
 
-            // --- 3. RETURN FINAL RESPONSE ---
-            return Ok(new EarningsPageDto(
-                LifetimeEarnings: lifetimeEarnings,
-                CurrentMonthEarnings: thisMonthEarnings,
-                GrowthPercentage: Math.Round(growthPercentage, 1),
-                AppCommission: appCommission,
 
-                TotalConsultations: consultations,
-                AveragePerVisit: Math.Round(avgPerVisit, 2),
+        [HttpGet("transactions")]
+        [ProducesResponseType<PaginationResult<TransactionItemDto>>(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetTransactions(
+            int page = 1,
+            int pageSize = 10)
+        {
+            string? doctorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-                ChartData: chartData,
-                RecentTransactions: transactions
-            ));
+            IOrderedQueryable<Booking> query = dbContext.Bookings
+                .Include(b => b.Patient)
+                .Where(b => b.DoctorId == doctorId && b.Status == BookingStatus.Completed)
+                .OrderByDescending(b => b.AppointmentDate);
+
+            int totalCount = await query.CountAsync();
+
+            List<TransactionItemDto> items = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(b => b.ToTransactionItemDto())
+                .ToListAsync();
+
+            PaginationResult<TransactionItemDto> result = new()
+            {
+                Items = items,
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize
+            };
+
+            return Ok(result);
         }
     }
-
-    public record EarningsPageDto(
-        // The Dark Card (Lifetime / Current Month Stats)
-        decimal LifetimeEarnings,
-        decimal CurrentMonthEarnings,
-        double GrowthPercentage, // e.g. 18.5
-        decimal AppCommission,   // Calculated from This Month
-
-        // The Filtered Stats (Reactive to Week/Month/Year)
-        int TotalConsultations,
-        decimal AveragePerVisit,
-
-        // The Chart Data
-        List<ChartDataPointDto> ChartData,
-
-        // The List at the bottom
-        List<TransactionItemDto> RecentTransactions
-    );
-
-    public record ChartDataPointDto(string Label, decimal Amount); // Label = "Mon", "Tue" or "Week 1"
-
-    public record TransactionItemDto(
-        string PatientName,
-        string Date,
-        decimal Amount,
-        string Status // "Paid", "Refunded"
-    );
 }
