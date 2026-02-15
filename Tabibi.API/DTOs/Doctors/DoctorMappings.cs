@@ -26,7 +26,7 @@ namespace Tabibi.API.DTOs.Doctors
             ]
         };
 
-        public static DoctorBasicDto ToDoctorBasicDto(this Doctor doctor)
+        public static DoctorBasicDto ToDoctorBasicDto(this Doctor doctor, string? patientId = null)
         {
             return new DoctorBasicDto
             {
@@ -36,7 +36,8 @@ namespace Tabibi.API.DTOs.Doctors
                 ConsultationFee = doctor.ConsultationFee,
                 YearsOfExperience = doctor.YearsOfExperience,
                 Department = doctor.Department?.Name,
-                Address = doctor.Clinic?.Address
+                Address = doctor.Clinic?.Address,
+                IsFavorited = patientId == null || (doctor.Favorites?.Any(f => f.PatientId == patientId) ?? false)
             };
         }
 
@@ -88,6 +89,7 @@ namespace Tabibi.API.DTOs.Doctors
             double rating,
             int reviewCount,
             int patientCount,
+            string patientId,
             List<ReviewDto> reviews)
         {
             return new DoctorDetailsDto
@@ -104,6 +106,7 @@ namespace Tabibi.API.DTOs.Doctors
                 ReviewCount = reviewCount,
                 PatientCount = patientCount,
                 Reviews = reviews,
+                IsFavorited = doctor.Favorites?.Any(f => f.PatientId == patientId) ?? false,
                 Schedule = doctor.Clinic?.Schedule.Select(s => new WorkScheduleDto
                 {
                     DayOfWeek = s.DayOfWeek,
@@ -113,7 +116,7 @@ namespace Tabibi.API.DTOs.Doctors
             };
         }
 
-        public static DoctorMapPinDto ToDoctorMapPinDto(this Doctor doctor)
+        public static DoctorMapPinDto ToDoctorMapPinDto(this Doctor doctor, string patientId)
         {
             return new DoctorMapPinDto(
                 doctor.Id,
@@ -123,7 +126,8 @@ namespace Tabibi.API.DTOs.Doctors
                 doctor.Clinic.Latitude,
                 doctor.Clinic.Longitude,
                 doctor.AvatarUrl,
-                doctor.ConsultationFee
+                doctor.ConsultationFee,
+                doctor.Favorites?.Any(f => f.PatientId == patientId) ?? false
             );
         }
 

@@ -8,6 +8,7 @@
         double Latitude,
         double Longitude,
         string? AvatarUrl,
-        decimal ConsultationFee
+        decimal ConsultationFee,
+        bool IsFavorited
     );
 }

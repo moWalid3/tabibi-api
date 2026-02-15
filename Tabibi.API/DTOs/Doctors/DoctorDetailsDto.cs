@@ -16,6 +16,7 @@ namespace Tabibi.API.DTOs.Doctors
         public double Rating { get; init; }
         public int ReviewCount { get; init; }
         public int PatientCount { get; init; }
+        public bool IsFavorited { get; init; }
         public List<ReviewDto> Reviews { get; init; } = [];
         public List<WorkScheduleDto>? Schedule { get; init; }
     }

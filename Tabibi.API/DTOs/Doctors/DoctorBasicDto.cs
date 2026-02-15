@@ -9,5 +9,6 @@
         public int YearsOfExperience { get; init; }
         public string? Address { get; init; }
         public string? Department { get; init; }
+        public bool IsFavorited { get; init; }
     }
 }

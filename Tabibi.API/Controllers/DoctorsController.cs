@@ -72,6 +72,8 @@ namespace Tabibi.API.Controllers
                 }
             }
 
+            string? patientId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
             query.Search ??= query.Search?.Trim().ToLower();
 
             IQueryable<DoctorBasicDto> patientsQuery = dbContext.Users.AsNoTracking()
@@ -79,6 +81,7 @@ namespace Tabibi.API.Controllers
                 .Include(d => d.Department)
                 .Include(d => d.Clinic)
                     .ThenInclude(c => c.City)
+                .Include(d => d.Favorites)
                 .Where(d => d.Status == DoctorStatus.Approved)
                 .Where(d => query.Search == null ||
                             d.Name.ToLower().Contains(query.Search) ||
@@ -88,7 +91,7 @@ namespace Tabibi.API.Controllers
                 .Where(d => query.CityId == null || (d.Clinic != null && d.Clinic.CityId.ToString() == query.CityId))
                 .Where(d => query.DepartmentId == null || d.DepartmentId.ToString() == query.DepartmentId)
                 .ApplySort(query.Sort, sortMappingProvider.GetMappings<DoctorBasicDto, Doctor>())
-                .Select(d => d.ToDoctorBasicDto());
+                .Select(d => d.ToDoctorBasicDto(patientId));
 
             int totalCount = await patientsQuery.CountAsync();
 
@@ -136,10 +139,13 @@ namespace Tabibi.API.Controllers
                         statusCode: StatusCodes.Status400BadRequest);
                 }
             }
+            
+            string? patientId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             IQueryable<Doctor> query = dbContext.Users.OfType<Doctor>()
                 .Include(d => d.Clinic)
                 .Include(d => d.Department)
+                .Include(d => d.Favorites)
                 .Where(d => d.Status == DoctorStatus.Approved)
                 .Where(d => d.Clinic != null)
                 .Where(d => d.Clinic.Latitude >= minLat && d.Clinic.Latitude <= maxLat)
@@ -147,7 +153,7 @@ namespace Tabibi.API.Controllers
                 .Where(d => departmentId == null || d.DepartmentId.ToString() == departmentId);
 
             List<DoctorMapPinDto> mapPins = await query
-                .Select(d => d.ToDoctorMapPinDto())
+                .Select(d => d.ToDoctorMapPinDto(patientId))
                 .ToListAsync();
 
             return Ok(mapPins);
@@ -193,10 +199,13 @@ namespace Tabibi.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetDoctorDetails(string id)
         {
+            string? patientId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
             Doctor? doctor = await dbContext.Users.OfType<Doctor>()
                 .Include(d => d.Department)
                 .Include(d => d.Clinic)
                     .ThenInclude(c => c.Schedule)
+                .Include(d => d.Favorites)
                 .AsSplitQuery()
                 .FirstOrDefaultAsync(d => d.Id == id);
 
@@ -233,6 +242,7 @@ namespace Tabibi.API.Controllers
                 rating: stats?.AverageRating ?? 0,
                 reviewCount: stats?.TotalCount ?? 0,
                 patientCount: patientCount,
+                patientId: patientId,
                 reviews: recentReviews);
 
             return Ok(result);

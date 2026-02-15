@@ -20,6 +20,7 @@ namespace Tabibi.API.Database
         public DbSet<ChatMessage> ChatMessages { get; set; }
         public DbSet<Prescription> Prescriptions { get; set; }
         public DbSet<PrescriptionItem> PrescriptionItems { get; set; }
+        public DbSet<Favorite> Favorites { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -37,18 +38,9 @@ namespace Tabibi.API.Database
             builder.Entity<ChatMessage>().ToTable(nameof(ChatMessages), Schemas.Core);
             builder.Entity<Prescription>().ToTable(nameof(Prescriptions), Schemas.Core);
             builder.Entity<PrescriptionItem>().ToTable(nameof(PrescriptionItems), Schemas.Core);
+            builder.Entity<Favorite>().ToTable(nameof(Favorites), Schemas.Core);
 
             builder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
-
-            //builder.ApplyConfiguration(new ApplicationUserConfiguration());
-            //builder.ApplyConfiguration(new RefreshTokenConfiguration());
-            //builder.ApplyConfiguration(new DoctorConfiguration());
-            //builder.ApplyConfiguration(new PatientConfiguration());
-            //builder.ApplyConfiguration(new ClinicConfiguration());
-            //builder.ApplyConfiguration(new DepartmentConfiguration());
-            //builder.ApplyConfiguration(new CityConfiguration());
-            //builder.ApplyConfiguration(new WorkScheduleConfiguration());
-            //builder.ApplyConfiguration(new BookingConfiguration());
         }
     }
 }
