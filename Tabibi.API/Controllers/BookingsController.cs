@@ -405,5 +405,82 @@ namespace Tabibi.API.Controllers
 
             return Ok();
         }
+
+
+        [HttpPatch("{id}/reschedule")]
+        [Authorize(Roles = Roles.Patient)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> RescheduleBooking(
+            Guid id,
+            [FromBody] RescheduleBookingRequestDto request,
+            [FromServices] IValidator<RescheduleBookingRequestDto> validator)
+        {
+            await validator.ValidateAndThrowAsync(request);
+
+            string? patientId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            Booking? booking = await dbContext.Bookings
+                .Include(b => b.Patient)
+                .FirstOrDefaultAsync(b => b.Id == id && b.PatientId == patientId);
+
+            if (booking == null)
+            {
+                return NotFound();
+            }
+
+            if (booking.Status != BookingStatus.Confirmed && booking.Status != BookingStatus.AwaitingPayment)
+            {
+                return BadRequest("You can only reschedule Confirmed or Pending bookings.");
+            }
+
+            if (booking.AppointmentDate < DateTime.UtcNow.AddHours(2))
+            {
+                return BadRequest("Cannot reschedule less than 2 hours before the appointment.");
+            }
+
+            bool isTaken = await dbContext.Bookings
+                .AnyAsync(b => b.DoctorId == booking.DoctorId &&
+                               b.AppointmentDate == request.NewDate &&
+                               b.Id != booking.Id &&
+                               b.Status != BookingStatus.Canceled &&
+                               b.Status != BookingStatus.Refunded);
+
+            if (isTaken)
+            {
+                return BadRequest("The selected time slot is already taken.");
+            }
+
+            int dayOfWeek = (int)request.NewDate.DayOfWeek;
+            WorkSchedule? schedule = await dbContext.WorkSchedules
+                .FirstOrDefaultAsync(s => s.ClinicId == booking.DoctorId && (int)s.DayOfWeek == dayOfWeek);
+
+            if (schedule == null)
+            {
+                return BadRequest("The doctor does not work on this day.");
+            }
+
+            TimeSpan newTime = request.NewDate.TimeOfDay;
+            if (newTime < schedule.OpenTime || newTime >= schedule.CloseTime)
+            {
+                return BadRequest("The selected time is outside the doctor's working hours.");
+            }
+
+            DateTime oldDate = booking.AppointmentDate;
+            booking.AppointmentDate = request.NewDate;
+
+            await dbContext.SaveChangesAsync();
+
+            await notificationService.SendNotificationAsync(
+                booking.DoctorId,
+                "Booking Rescheduled",
+                $"{booking.Patient?.Name} rescheduled from {oldDate:g} to {booking.AppointmentDate:g}",
+                NotificationType.BookingAlert,
+                booking.Id
+            );
+
+            return Ok();
+        }
     }
 }
