@@ -20,6 +20,44 @@ namespace Tabibi.API.Controllers
         NotificationService notificationService) : ControllerBase
     {
         [Authorize(Roles = Roles.Patient)]
+        [HttpGet("next-upcoming")]
+        [ProducesResponseType<UpcomingPatientBookingSummaryDto>(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetNextUpcomingBooking()
+        {
+            string? patientId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            DateTime now = DateTime.UtcNow;
+
+            IQueryable<Booking> upcomingQuery = dbContext.Bookings
+                .Where(b => b.PatientId == patientId &&
+                            b.AppointmentDate >= now &&
+                            (b.Status == BookingStatus.Confirmed || b.Status == BookingStatus.AwaitingPayment));
+
+            int totalCount = await upcomingQuery.CountAsync();
+
+            if (totalCount == 0)
+            {
+                return Ok(new UpcomingPatientBookingSummaryDto(TotalUpcomingCount: 0, NextBooking: null));
+            }
+
+            PatientBookingDto? nextBooking = await upcomingQuery
+                .Include(b => b.Doctor)
+                    .ThenInclude(d => d.Department)
+                .Include(b => b.Doctor)
+                    .ThenInclude(d => d.Clinic)
+                .Include(b => b.Review)
+                .Include(b => b.Prescription)
+                .OrderBy(b => b.AppointmentDate)
+                .Select(b => b.ToPatientBookingDto())
+                .FirstOrDefaultAsync();
+
+            return Ok(new UpcomingPatientBookingSummaryDto(
+                TotalUpcomingCount: totalCount,
+                NextBooking: nextBooking
+            ));
+        }
+
+
+        [Authorize(Roles = Roles.Patient)]
         [HttpGet("my-bookings")]
         [ProducesResponseType<List<PatientBookingDto>>(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetMyBookings([FromQuery] string type = "upcoming")
