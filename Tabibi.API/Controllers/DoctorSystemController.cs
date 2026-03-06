@@ -125,6 +125,7 @@ namespace Tabibi.API.Controllers
             string? doctorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             Booking? booking = await dbContext.Bookings
+                .Include(b => b.Doctor)
                 .FirstOrDefaultAsync(b => b.Id == id && b.DoctorId == doctorId);
 
             if (booking == null)
@@ -171,7 +172,7 @@ namespace Tabibi.API.Controllers
             await notificationService.SendNotificationAsync(
                 booking.PatientId,
                 "Appointment Canceled",
-                $"Dr. has canceled your appointment on {booking.AppointmentDate:M}. A refund has been issued.",
+                $"Dr. {booking.Doctor?.Name} has canceled your appointment on {booking.AppointmentDate:M}. A refund has been issued.",
                 NotificationType.BookingAlert,
                 booking.Id
             );
@@ -242,6 +243,7 @@ namespace Tabibi.API.Controllers
             string? doctorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             Booking? booking = await dbContext.Bookings
+                .Include(b => b.Doctor)
                 .FirstOrDefaultAsync(b => b.Id == id && b.DoctorId == doctorId);
 
             if (booking == null)
@@ -262,7 +264,7 @@ namespace Tabibi.API.Controllers
             await notificationService.SendNotificationAsync(
                 booking.PatientId,
                 "New Prescription",
-                "You have received a new prescription. Tap to view.",
+                $"You have received a new prescription from Dr. {booking.Doctor?.Name}. Tap to view.",
                 NotificationType.System,
                 prescription.Id
             );
@@ -285,6 +287,7 @@ namespace Tabibi.API.Controllers
 
             Prescription? prescription = await dbContext.Prescriptions
                 .Include(p => p.Booking)
+                    .ThenInclude(b => b.Doctor)
                 .Include(p => p.Medicines)
                 .FirstOrDefaultAsync(p => p.Id == id && p.Booking.DoctorId == doctorId);
 
@@ -312,7 +315,7 @@ namespace Tabibi.API.Controllers
             await notificationService.SendNotificationAsync(
                 prescription.Booking?.PatientId,
                 "Prescription Updated",
-                "Dr. has updated your prescription details.",
+                $"Dr. {prescription.Booking?.Doctor?.Name} has updated your prescription details on {prescription.Booking?.AppointmentDate:d}.",
                 NotificationType.System,
                 prescription.Id
             );
@@ -330,6 +333,7 @@ namespace Tabibi.API.Controllers
 
             Prescription? prescription = await dbContext.Prescriptions
                 .Include(p => p.Booking)
+                    .ThenInclude(b => b.Doctor)
                 .FirstOrDefaultAsync(p => p.Id == id && p.Booking.DoctorId == doctorId);
 
             if (prescription == null)
@@ -343,7 +347,7 @@ namespace Tabibi.API.Controllers
             await notificationService.SendNotificationAsync(
                 prescription.Booking?.PatientId,
                 "Prescription Deleted",
-                "Dr. has deleted your prescription.",
+                $"Dr. {prescription.Booking?.Doctor?.Name} has deleted your prescription on {prescription?.Booking?.AppointmentDate:d}.",
                 NotificationType.System,
                 prescription.Id
             );

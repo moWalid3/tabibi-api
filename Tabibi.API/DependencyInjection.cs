@@ -1,4 +1,6 @@
-﻿using FluentValidation;
+﻿using FirebaseAdmin;
+using FluentValidation;
+using Google.Apis.Auth.OAuth2;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -70,6 +72,7 @@ namespace Tabibi.API
 
             builder.Services.AddScoped<TokenProvider>();
             builder.Services.AddScoped<NotificationService>();
+            builder.Services.AddScoped<IFcmNotificationService, FcmNotificationService>();
 
             builder.Services.AddTransient<DataShapingProvider>();
 
@@ -187,6 +190,16 @@ namespace Tabibi.API
         public static WebApplicationBuilder AddStripe(this WebApplicationBuilder builder)
         {
             StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
+
+            return builder;
+        }
+
+        public static WebApplicationBuilder AddFirebase(this WebApplicationBuilder builder)
+        {
+            FirebaseApp.Create(new AppOptions()
+            {
+                Credential = GoogleCredential.FromFile("firebase-adminsdk.json")
+            });
 
             return builder;
         }

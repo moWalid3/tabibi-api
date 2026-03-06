@@ -11,5 +11,6 @@ namespace Tabibi.API.Entities
         public DateOnly? DateOfBirth { get; set; }
         public required DateTime CreatedAtUtc { get; set; }
         public DateTime? UpdatedAtUtc { get; set; }
+        public string? FcmToken { get; set; }
     }
 }

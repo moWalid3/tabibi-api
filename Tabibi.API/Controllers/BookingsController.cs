@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using Hangfire;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -296,6 +297,35 @@ namespace Tabibi.API.Controllers
             await dbContext.Bookings.AddAsync(booking);
             await dbContext.SaveChangesAsync();
 
+            await notificationService.SendNotificationAsync(
+                booking.DoctorId,
+                "Booking Added",
+                $"New Appointment Booked with {booking.Patient?.Name} at {booking.AppointmentDate:g}",
+                NotificationType.BookingAlert,
+                booking.Id
+            );
+
+            await notificationService.SendNotificationAsync(
+                booking.PatientId,
+                "Booking Added",
+                $"New Appointment Booked with Dr. {booking.Doctor?.Name} at {booking.AppointmentDate:g}",
+                NotificationType.BookingAlert,
+                booking.Id
+            );
+
+            DateTime timeFor2HourReminder = booking.AppointmentDate.AddHours(-2);
+            DateTime timeFor10MinReminder = booking.AppointmentDate.AddMinutes(-10);
+
+            BackgroundJob.Schedule<AppointmentReminderJob>(
+                job => job.Send2HourReminder(booking.Id),
+                timeFor2HourReminder
+            );
+
+            BackgroundJob.Schedule<AppointmentReminderJob>(
+                job => job.Send10MinuteReminder(booking.Id),
+                timeFor10MinReminder
+            );
+
             CreateBookingResponseDto response = new(booking.Id, paymentIntent.ClientSecret);
 
             return Ok(response);
@@ -385,7 +415,9 @@ namespace Tabibi.API.Controllers
         {
             string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            Booking? booking = await dbContext.Bookings.FirstOrDefaultAsync(b => b.Id == id);
+            Booking? booking = await dbContext.Bookings
+                .Include(b => b.Patient)
+                .FirstOrDefaultAsync(b => b.Id == id);
 
             if (booking == null)
             {
@@ -436,7 +468,7 @@ namespace Tabibi.API.Controllers
             await notificationService.SendNotificationAsync(
                 booking.DoctorId,
                 "Booking Canceled",
-                $"Patient has canceled the appointment on {booking.AppointmentDate:d}",
+                $"Patient {booking.Patient?.Name} has canceled the appointment on {booking.AppointmentDate:d}",
                 NotificationType.BookingAlert,
                 booking.Id
             );

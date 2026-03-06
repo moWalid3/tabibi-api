@@ -20,7 +20,8 @@ namespace Tabibi.API
                 .AddSortServices()
                 .AddEmailServices()
                 .AddCorsPolicy()
-                .AddStripe();
+                .AddStripe()
+                .AddFirebase();
 
             var app = builder.Build();
 

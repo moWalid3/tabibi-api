@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
@@ -109,6 +110,33 @@ namespace Tabibi.API.Controllers
                 .CountAsync(n => n.UserId == userId && !n.IsRead);
 
             return Ok(new GetUnreadCountResponseDto(count));
+        }
+
+
+        [HttpPut("fcm-token")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateFcmToken(
+            UpdateFcmTokenDto dto,
+            IValidator<UpdateFcmTokenDto> validator)
+        {
+            await validator.ValidateAndThrowAsync(dto);
+
+            string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            ApplicationUser? user = await dbContext.Users
+                .FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            user.FcmToken = dto.FcmToken;
+
+            await dbContext.SaveChangesAsync();
+
+            return Ok();
         }
     }
 }

@@ -11,8 +11,6 @@ using Tabibi.API.Services;
 
 namespace Tabibi.API.Controllers
 {
-
-
     [Authorize(Roles = $"{Roles.Doctor},{Roles.Patient}")]
     [Route("video")]
     [ApiController]
@@ -25,7 +23,10 @@ namespace Tabibi.API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetVideoToken(Guid bookingId)
+        public async Task<IActionResult> GetVideoToken(
+            Guid bookingId,
+            NotificationService notificationService,
+            IFcmNotificationService fcmService)
         {
             string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -40,14 +41,26 @@ namespace Tabibi.API.Controllers
             }
 
             string userName = "";
+            string targetUserId = "";
+            string? targetFcmToken = "";
+            string notificationTitle = "";
+            string notificationBody = "";
 
             if (booking.PatientId == userId)
             {
-                userName = booking.Patient?.Name;
+                userName = booking.Patient?.Name ?? "Patient";
+                targetUserId = booking.DoctorId;
+                targetFcmToken = booking.Doctor?.FcmToken;
+                notificationTitle = "Patient is Waiting!";
+                notificationBody = $"{userName} has joined the video call room. Tap here to join.";
             }
             else if (booking.DoctorId == userId)
             {
-                userName = booking.Doctor?.Name;
+                userName = $"Dr. {booking.Doctor?.Name}";
+                targetUserId = booking.PatientId;
+                targetFcmToken = booking.Patient?.FcmToken;
+                notificationTitle = "Doctor Joined!";
+                notificationBody = $"{userName} has joined the video call. Tap here to join now.";
             }
             else
             {
@@ -64,7 +77,7 @@ namespace Tabibi.API.Controllers
                 return BadRequest("Booking must be Confirmed (Paid) to join.");
             }
 
-            // Allow joining 15 minutes before -> until 2 hours after start
+            // Time Validation (15 mins before -> 2 hours after)
             DateTime now = DateTime.UtcNow;
             if (now < booking.AppointmentDate.AddMinutes(-15))
             {
@@ -75,10 +88,29 @@ namespace Tabibi.API.Controllers
                 return BadRequest("Appointment time has expired.");
             }
 
+            await notificationService.SendNotificationAsync(
+                targetUserId,
+                notificationTitle,
+                notificationBody,
+                NotificationType.System,
+                booking.Id
+            );
+
+            if (!string.IsNullOrEmpty(targetFcmToken))
+            {
+                var pushData = new Dictionary<string, string>
+                {
+                    { "type", "video_call_join" },
+                    { "bookingId", booking.Id.ToString() }
+                };
+
+                await fcmService
+                    .SendPushNotificationAsync(targetFcmToken, notificationTitle, notificationBody, pushData);
+            }
+
             long appId = long.Parse(config["ZegoCloud:AppId"]);
             string serverSecret = config["ZegoCloud:ServerSecret"];
             string roomId = booking.Id.ToString();
-
             long effectiveTime = 3600;
 
             string token = ZegoTokenGenerator
