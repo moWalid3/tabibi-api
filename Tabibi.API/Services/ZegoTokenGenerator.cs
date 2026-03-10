@@ -26,7 +26,7 @@ namespace Tabibi.API.Services
                     { 1, 1 },
                     { 2, 1 }
                 },
-                stream_id_list = new string[] { }
+                stream_id_list = Array.Empty<string>()
             };
 
             // 2. The payload field in Zego tokens MUST be a JSON string
@@ -47,14 +47,13 @@ namespace Tabibi.API.Services
             string plainText = JsonConvert.SerializeObject(tokenInfo);
 
             // 4. Handle Secret (Production Check)
-            // Zego secrets are 32-char Hex strings. We need exactly 32 bytes.
             var secretBytes = Encoding.UTF8.GetBytes(serverSecret);
             if (secretBytes.Length != 32)
             {
                 throw new InvalidOperationException("Zego Server Secret must be exactly 32 characters/bytes.");
             }
 
-            // 5. Encryption (AES-128-CBC)
+            // 5. Encryption (AES-256-CBC based on 32-byte secret)
             var iv = new byte[16];
             RandomNumberGenerator.Fill(iv); // More secure than 'new Random()' for production
 
@@ -68,15 +67,33 @@ namespace Tabibi.API.Services
             var plainBytes = Encoding.UTF8.GetBytes(plainText);
             var encryptedBytes = encryptor.TransformFinalBlock(plainBytes, 0, plainBytes.Length);
 
-            // 6. Construct Final Byte Array: [IV (16) + Len (2) + Content]
-            var finalBytes = new byte[16 + 2 + encryptedBytes.Length];
-            Buffer.BlockCopy(iv, 0, finalBytes, 0, 16);
+            // =========================================================================
+            // 6. THE FIX: Construct Final Byte Array (Official Zego Token04 Format)
+            // Structure: ExpireTime (8) + IV Length (2) + IV (16) + Crypto Length (2) + Crypto Data
+            // =========================================================================
+            var finalBytes = new byte[8 + 2 + 16 + 2 + encryptedBytes.Length];
+            int offset = 0;
 
-            // Content Length (Big Endian)
-            finalBytes[16] = (byte)(encryptedBytes.Length >> 8);
-            finalBytes[17] = (byte)(encryptedBytes.Length);
+            // Expire Time (8 bytes, Big Endian)
+            var expireBytes = BitConverter.GetBytes((long)expireTime);
+            if (BitConverter.IsLittleEndian) Array.Reverse(expireBytes); // Ensure Big Endian
+            Buffer.BlockCopy(expireBytes, 0, finalBytes, offset, 8);
+            offset += 8;
 
-            Buffer.BlockCopy(encryptedBytes, 0, finalBytes, 18, encryptedBytes.Length);
+            // IV Length (2 bytes, Big Endian) - Value is always 16
+            finalBytes[offset++] = 0;
+            finalBytes[offset++] = 16;
+
+            // IV Data (16 bytes)
+            Buffer.BlockCopy(iv, 0, finalBytes, offset, 16);
+            offset += 16;
+
+            // Encrypted Data Length (2 bytes, Big Endian)
+            finalBytes[offset++] = (byte)(encryptedBytes.Length >> 8);
+            finalBytes[offset++] = (byte)(encryptedBytes.Length);
+
+            // Encrypted Data Bytes
+            Buffer.BlockCopy(encryptedBytes, 0, finalBytes, offset, encryptedBytes.Length);
 
             // 7. Return with Version Prefix "04"
             return "04" + Convert.ToBase64String(finalBytes);
