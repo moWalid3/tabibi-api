@@ -225,8 +225,7 @@ namespace Tabibi.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> CreateBooking(
             CreateBookingDto createBookingDto,
-            IValidator<CreateBookingDto> validator,
-            [FromServices] IBackgroundJobClient backgroundJobs)
+            IValidator<CreateBookingDto> validator)
         {
             try
             {
@@ -300,37 +299,6 @@ namespace Tabibi.API.Controllers
                 await dbContext.Bookings.AddAsync(booking);
                 await dbContext.SaveChangesAsync();
 
-                ApplicationUser? patient = await dbContext.Users.FindAsync(patientId);
-
-                await notificationService.SendNotificationAsync(
-                    booking.DoctorId,
-                    "Booking Added",
-                    $"New Appointment Booked with {patient?.Name} at {booking.AppointmentDate:g}",
-                    NotificationType.BookingAlert,
-                    booking.Id
-                );
-
-                await notificationService.SendNotificationAsync(
-                    booking.PatientId,
-                    "Booking Added",
-                    $"New Appointment Booked with Dr. {doctor.Name} at {booking.AppointmentDate:g}",
-                    NotificationType.BookingAlert,
-                    booking.Id
-                );
-
-                DateTime timeFor2HourReminder = booking.AppointmentDate.AddHours(-2);
-                DateTime timeFor10MinReminder = booking.AppointmentDate.AddMinutes(-10);
-
-                backgroundJobs.Schedule<AppointmentReminderJob>(
-                    job => job.Send2HourReminder(booking.Id),
-                    timeFor2HourReminder
-                );
-
-                backgroundJobs.Schedule<AppointmentReminderJob>(
-                    job => job.Send10MinuteReminder(booking.Id),
-                    timeFor10MinReminder
-                );
-
                 CreateBookingResponseDto response = new(booking.Id, paymentIntent.ClientSecret);
 
                 return Ok(response);
@@ -353,7 +321,9 @@ namespace Tabibi.API.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> ConfirmPayment(Guid id)
+        public async Task<IActionResult> ConfirmPayment(
+            Guid id,
+            [FromServices] IBackgroundJobClient backgroundJobs)
         {
             Booking? booking = await dbContext.Bookings
                 .Include(b => b.Patient)
@@ -415,6 +385,19 @@ namespace Tabibi.API.Controllers
                 $"You have successfully booked an appointment with Dr. {booking.Doctor?.Name} at {booking.AppointmentDate:g}",
                 NotificationType.BookingAlert,
                 booking.Id
+            );
+
+            DateTime timeFor2HourReminder = booking.AppointmentDate.AddHours(-2);
+            DateTime timeFor10MinReminder = booking.AppointmentDate.AddMinutes(-10);
+
+            backgroundJobs.Schedule<AppointmentReminderJob>(
+                job => job.Send2HourReminder(booking.Id),
+                timeFor2HourReminder
+            );
+
+            backgroundJobs.Schedule<AppointmentReminderJob>(
+                job => job.Send10MinuteReminder(booking.Id),
+                timeFor10MinReminder
             );
 
             return Ok();
