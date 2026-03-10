@@ -225,110 +225,126 @@ namespace Tabibi.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> CreateBooking(
             CreateBookingDto createBookingDto,
-            IValidator<CreateBookingDto> validator)
+            IValidator<CreateBookingDto> validator,
+            [FromServices] IBackgroundJobClient backgroundJobs)
         {
-            await validator.ValidateAndThrowAsync(createBookingDto);
-
-            string? patientId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            int dayOfWeek = (int)createBookingDto.AppointmentDate.DayOfWeek;
-
-            WorkSchedule? schedule = await dbContext.WorkSchedules
-                .FirstOrDefaultAsync(s => s.ClinicId == createBookingDto.DoctorId &&
-                                          (int)s.DayOfWeek == dayOfWeek);
-
-            if (schedule == null)
+            try
             {
-                return Problem("The doctor is not available on this day.",
-                    statusCode: StatusCodes.Status400BadRequest);
-            }
+                await validator.ValidateAndThrowAsync(createBookingDto);
 
-            TimeSpan requestedTime = createBookingDto.AppointmentDate.TimeOfDay;
+                string? patientId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            if (requestedTime < schedule.OpenTime || requestedTime >= schedule.CloseTime)
-            {
-                return Problem("Selected time is outside working hours.",
-                    statusCode: StatusCodes.Status400BadRequest);
-            }
+                int dayOfWeek = (int)createBookingDto.AppointmentDate.DayOfWeek;
 
-            bool isTaken = await dbContext.Bookings
-                .AnyAsync(b => b.DoctorId == createBookingDto.DoctorId &&
-                               b.AppointmentDate == createBookingDto.AppointmentDate &&
-                               b.Status != BookingStatus.Canceled &&
-                               b.Status != BookingStatus.Refunded);
+                WorkSchedule? schedule = await dbContext.WorkSchedules
+                    .FirstOrDefaultAsync(s => s.ClinicId == createBookingDto.DoctorId &&
+                                              (int)s.DayOfWeek == dayOfWeek);
 
-            if (isTaken)
-            {
-                return Problem("This slot has just been taken.",
-                    statusCode: StatusCodes.Status400BadRequest);
-            }
-
-            var doctor = await dbContext.Users.OfType<Doctor>()
-                .Where(d => d.Id == createBookingDto.DoctorId)
-                .Select(d => new { d.ConsultationFee })
-                .FirstOrDefaultAsync();
-
-            if (doctor == null || patientId == null)
-            {
-                return NotFound();
-            }
-
-            var service = new PaymentIntentService();
-            var options = new PaymentIntentCreateOptions
-            {
-                Amount = (long)(doctor.ConsultationFee * 100),
-                Currency = "egp", // Use "usd" if "egp" gives issues in Test Mode
-                AutomaticPaymentMethods = new PaymentIntentAutomaticPaymentMethodsOptions
+                if (schedule == null)
                 {
-                    Enabled = true,
-                },
-                Metadata = new Dictionary<string, string>
-                {
-                    { "PatientId", patientId },
-                    { "DoctorId", createBookingDto.DoctorId }
+                    return Problem("The doctor is not available on this day.",
+                        statusCode: StatusCodes.Status400BadRequest);
                 }
-            };
 
-            PaymentIntent paymentIntent = await service.CreateAsync(options);
+                TimeSpan requestedTime = createBookingDto.AppointmentDate.TimeOfDay;
 
-            Booking booking = createBookingDto
-                .ToEntity(patientId, doctor.ConsultationFee, paymentIntent.Id);
+                if (requestedTime < schedule.OpenTime || requestedTime >= schedule.CloseTime)
+                {
+                    return Problem("Selected time is outside working hours.",
+                        statusCode: StatusCodes.Status400BadRequest);
+                }
 
-            await dbContext.Bookings.AddAsync(booking);
-            await dbContext.SaveChangesAsync();
+                bool isTaken = await dbContext.Bookings
+                    .AnyAsync(b => b.DoctorId == createBookingDto.DoctorId &&
+                                   b.AppointmentDate == createBookingDto.AppointmentDate &&
+                                   b.Status != BookingStatus.Canceled &&
+                                   b.Status != BookingStatus.Refunded);
 
-            await notificationService.SendNotificationAsync(
-                booking.DoctorId,
-                "Booking Added",
-                $"New Appointment Booked with {booking.Patient?.Name} at {booking.AppointmentDate:g}",
-                NotificationType.BookingAlert,
-                booking.Id
-            );
+                if (isTaken)
+                {
+                    return Problem("This slot has just been taken.",
+                        statusCode: StatusCodes.Status400BadRequest);
+                }
 
-            await notificationService.SendNotificationAsync(
-                booking.PatientId,
-                "Booking Added",
-                $"New Appointment Booked with Dr. {booking.Doctor?.Name} at {booking.AppointmentDate:g}",
-                NotificationType.BookingAlert,
-                booking.Id
-            );
+                var doctor = await dbContext.Users.OfType<Doctor>()
+                    .Where(d => d.Id == createBookingDto.DoctorId)
+                    .Select(d => new { d.ConsultationFee, d.Name })
+                    .FirstOrDefaultAsync();
 
-            DateTime timeFor2HourReminder = booking.AppointmentDate.AddHours(-2);
-            DateTime timeFor10MinReminder = booking.AppointmentDate.AddMinutes(-10);
+                if (doctor == null || patientId == null)
+                {
+                    return NotFound("Doctor or Patient not found.");
+                }
 
-            BackgroundJob.Schedule<AppointmentReminderJob>(
-                job => job.Send2HourReminder(booking.Id),
-                timeFor2HourReminder
-            );
+                var service = new PaymentIntentService();
+                var options = new PaymentIntentCreateOptions
+                {
+                    Amount = (long)(doctor.ConsultationFee * 100),
+                    Currency = "egp",
+                    AutomaticPaymentMethods = new PaymentIntentAutomaticPaymentMethodsOptions
+                    {
+                        Enabled = true,
+                    },
+                    Metadata = new Dictionary<string, string>
+                    {
+                        { "PatientId", patientId },
+                        { "DoctorId", createBookingDto.DoctorId }
+                    }
+                };
 
-            BackgroundJob.Schedule<AppointmentReminderJob>(
-                job => job.Send10MinuteReminder(booking.Id),
-                timeFor10MinReminder
-            );
+                PaymentIntent paymentIntent = await service.CreateAsync(options);
 
-            CreateBookingResponseDto response = new(booking.Id, paymentIntent.ClientSecret);
+                Booking booking = createBookingDto
+                    .ToEntity(patientId, doctor.ConsultationFee, paymentIntent.Id);
 
-            return Ok(response);
+                await dbContext.Bookings.AddAsync(booking);
+                await dbContext.SaveChangesAsync();
+
+                ApplicationUser? patient = await dbContext.Users.FindAsync(patientId);
+
+                await notificationService.SendNotificationAsync(
+                    booking.DoctorId,
+                    "Booking Added",
+                    $"New Appointment Booked with {patient?.Name} at {booking.AppointmentDate:g}",
+                    NotificationType.BookingAlert,
+                    booking.Id
+                );
+
+                await notificationService.SendNotificationAsync(
+                    booking.PatientId,
+                    "Booking Added",
+                    $"New Appointment Booked with Dr. {doctor.Name} at {booking.AppointmentDate:g}",
+                    NotificationType.BookingAlert,
+                    booking.Id
+                );
+
+                DateTime timeFor2HourReminder = booking.AppointmentDate.AddHours(-2);
+                DateTime timeFor10MinReminder = booking.AppointmentDate.AddMinutes(-10);
+
+                backgroundJobs.Schedule<AppointmentReminderJob>(
+                    job => job.Send2HourReminder(booking.Id),
+                    timeFor2HourReminder
+                );
+
+                backgroundJobs.Schedule<AppointmentReminderJob>(
+                    job => job.Send10MinuteReminder(booking.Id),
+                    timeFor10MinReminder
+                );
+
+                CreateBookingResponseDto response = new(booking.Id, paymentIntent.ClientSecret);
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    Message = "A crash occurred!",
+                    Error = ex.Message,
+                    Details = ex.InnerException?.Message,
+                    Source = ex.Source
+                });
+            }
         }
 
 

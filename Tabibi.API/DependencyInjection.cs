@@ -1,6 +1,7 @@
 ﻿using FirebaseAdmin;
 using FluentValidation;
 using Google.Apis.Auth.OAuth2;
+using Hangfire;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -200,6 +201,19 @@ namespace Tabibi.API
             {
                 Credential = GoogleCredential.FromFile("firebase-adminsdk.json")
             });
+
+            return builder;
+        }
+
+        public static WebApplicationBuilder AddHangfire(this WebApplicationBuilder builder)
+        {
+            builder.Services.AddHangfire(configuration => configuration
+                .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+                .UseSimpleAssemblyNameTypeSerializer()
+                .UseRecommendedSerializerSettings()
+                .UseSqlServerStorage(builder.Configuration.GetConnectionString("Database")));
+
+            builder.Services.AddHangfireServer();
 
             return builder;
         }
