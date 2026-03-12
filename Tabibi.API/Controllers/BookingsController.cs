@@ -387,18 +387,25 @@ namespace Tabibi.API.Controllers
                 booking.Id
             );
 
+            DateTime now = DateTime.UtcNow;
             DateTime timeFor2HourReminder = booking.AppointmentDate.AddHours(-2);
             DateTime timeFor10MinReminder = booking.AppointmentDate.AddMinutes(-10);
 
-            backgroundJobs.Schedule<AppointmentReminderJob>(
-                job => job.Send2HourReminder(booking.Id),
-                timeFor2HourReminder
-            );
+            if (timeFor2HourReminder > now)
+            {
+                backgroundJobs.Schedule<AppointmentReminderJob>(
+                    job => job.Send2HourReminder(booking.Id),
+                    timeFor2HourReminder
+                );
+            }
 
-            backgroundJobs.Schedule<AppointmentReminderJob>(
-                job => job.Send10MinuteReminder(booking.Id),
-                timeFor10MinReminder
-            );
+            if (timeFor10MinReminder > now)
+            {
+                backgroundJobs.Schedule<AppointmentReminderJob>(
+                    job => job.Send10MinuteReminder(booking.Id),
+                    timeFor10MinReminder
+                );
+            }
 
             return Ok();
         }

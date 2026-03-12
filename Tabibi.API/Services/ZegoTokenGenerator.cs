@@ -33,14 +33,14 @@ namespace Tabibi.API.Services
             string payloadJson = JsonConvert.SerializeObject(payloadData);
 
             // 3. Construct the main Token Info object
-            var nonce = new Random().NextInt64();
+            var nonce = new Random().Next();
             var tokenInfo = new
             {
                 app_id = appId,
                 user_id = userId,
                 nonce = nonce,
                 ctime = createTime,
-                expire = expireTime,
+                expire = effectiveTimeInSeconds,
                 payload = payloadJson // roomId is now included here!
             };
 
