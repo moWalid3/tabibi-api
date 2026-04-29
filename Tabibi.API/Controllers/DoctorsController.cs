@@ -11,6 +11,7 @@ using Tabibi.API.Common.Sorting;
 using Tabibi.API.Database;
 using Tabibi.API.DTOs.Doctors;
 using Tabibi.API.DTOs.Reviews;
+using Tabibi.API.DTOs.WorkSchedule;
 using Tabibi.API.Entities;
 using Tabibi.API.Entities.Enums;
 using Tabibi.API.Extensions;
@@ -139,7 +140,7 @@ namespace Tabibi.API.Controllers
                         statusCode: StatusCodes.Status400BadRequest);
                 }
             }
-            
+
             string? patientId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             IQueryable<Doctor> query = dbContext.Users.OfType<Doctor>()
@@ -277,6 +278,36 @@ namespace Tabibi.API.Controllers
 
 
         [Authorize(Roles = Roles.Doctor)]
+        [HttpGet("schedule")]
+        [ProducesResponseType<List<WorkScheduleDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetSchedule()
+        {
+            string? doctorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            Doctor? doctor = await dbContext.Users.AsNoTracking()
+                .OfType<Doctor>()
+                .Include(d => d.Clinic)
+                    .ThenInclude(c => c.Schedule)
+                .FirstOrDefaultAsync(d => d.Id == doctorId);
+
+            if (doctor == null)
+            {
+                return NotFound();
+            }
+
+            List<WorkScheduleDto> workSchedule = doctor.Clinic?.Schedule.Select(s => new WorkScheduleDto
+            {
+                DayOfWeek = s.DayOfWeek,
+                OpenTime = s.OpenTime,
+                CloseTime = s.CloseTime
+            }).ToList() ?? [];
+
+            return Ok(workSchedule);
+        }
+
+
+        [Authorize(Roles = Roles.Doctor)]
         [HttpPut("me")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -349,6 +380,44 @@ namespace Tabibi.API.Controllers
             await dbContext.SaveChangesAsync();
 
             scope.Complete();
+
+            return NoContent();
+        }
+
+
+        [Authorize(Roles = Roles.Doctor)]
+        [HttpPut("schedule")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateSchedule(
+            UpdateDoctorScheduleDto updateDoctorScheduleDto,
+            IValidator<UpdateDoctorScheduleDto> validator)
+        {
+            await validator.ValidateAndThrowAsync(updateDoctorScheduleDto);
+
+            string? doctorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            Doctor? doctor = await dbContext.Users
+                .OfType<Doctor>()
+                .Include(d => d.Clinic)
+                .Include(d => d.Clinic!.Schedule)
+                .FirstOrDefaultAsync(d => d.Id == doctorId);
+
+            if (doctor == null)
+            {
+                return NotFound();
+            }
+
+            List<WorkSchedule> existingSchedules = doctor.Clinic?.Schedule.ToList() ?? [];
+            dbContext.WorkSchedules.RemoveRange(existingSchedules); // Delete all old entries
+
+            foreach (var scheduleDto in updateDoctorScheduleDto.Schedule)
+            {
+                WorkSchedule newSchedule = scheduleDto.ToEntity(doctor.Id);
+                dbContext.WorkSchedules.Add(newSchedule);
+            }
+
+            await dbContext.SaveChangesAsync();
 
             return NoContent();
         }
