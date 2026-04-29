@@ -25,7 +25,24 @@ namespace Tabibi.API.Controllers
         public async Task<IActionResult> GetHomeData()
         {
             string? doctorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            DateTime today = DateTime.UtcNow.Date;
+
+            TimeZoneInfo egyptZone;
+            try
+            {
+                egyptZone = TimeZoneInfo.FindSystemTimeZoneById("Egypt Standard Time");
+            }
+            catch (TimeZoneNotFoundException)
+            {
+                egyptZone = TimeZoneInfo.FindSystemTimeZoneById("Africa/Cairo"); // Fallback for Linux/Docker
+            }
+
+            DateTime egyptNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, egyptZone);
+
+            DateTime startOfEgyptToday = egyptNow.Date;
+            DateTime endOfEgyptToday = startOfEgyptToday.AddDays(1).AddTicks(-1);
+
+            DateTime startOfDayUtc = TimeZoneInfo.ConvertTimeToUtc(startOfEgyptToday, egyptZone);
+            DateTime endOfDayUtc = TimeZoneInfo.ConvertTimeToUtc(endOfEgyptToday, egyptZone);
 
             var doctor = await dbContext.Users.OfType<Doctor>()
                 .Where(d => d.Id == doctorId)
@@ -40,7 +57,8 @@ namespace Tabibi.API.Controllers
             DoctorHomeStatsDto stats = new(
                 TodayCount: await dbContext.Bookings.CountAsync(b =>
                     b.DoctorId == doctorId &&
-                    b.AppointmentDate.Date == today &&
+                    b.AppointmentDate >= startOfDayUtc &&
+                    b.AppointmentDate <= endOfDayUtc &&
                     b.Status == BookingStatus.Confirmed),
 
                 CompletedCount: await dbContext.Bookings.CountAsync(b =>
@@ -55,7 +73,8 @@ namespace Tabibi.API.Controllers
             List<DoctorAppointmentDto> todayAppointments = await dbContext.Bookings
                 .Include(b => b.Patient)
                 .Where(b => b.DoctorId == doctorId &&
-                            b.AppointmentDate.Date == today &&
+                            b.AppointmentDate >= startOfDayUtc &&
+                            b.AppointmentDate <= endOfDayUtc &&
                             (b.Status == BookingStatus.Confirmed || b.Status == BookingStatus.Completed))
                 .OrderBy(b => b.AppointmentDate)
                 .Take(3)
@@ -79,10 +98,29 @@ namespace Tabibi.API.Controllers
         {
             string? doctorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
+            TimeZoneInfo egyptZone;
+            try
+            {
+                egyptZone = TimeZoneInfo.FindSystemTimeZoneById("Egypt Standard Time");
+            }
+            catch (TimeZoneNotFoundException)
+            {
+                egyptZone = TimeZoneInfo.FindSystemTimeZoneById("Africa/Cairo"); // Fallback for Linux/Docker
+            }
+
+            DateTime requestedDateEgypt = new(date.Year, date.Month, date.Day, 0, 0, 0, DateTimeKind.Unspecified);
+
+            DateTime startOfEgyptDay = requestedDateEgypt;
+            DateTime endOfEgyptDay = startOfEgyptDay.AddDays(1).AddTicks(-1);
+
+            DateTime startOfDayUtc = TimeZoneInfo.ConvertTimeToUtc(startOfEgyptDay, egyptZone);
+            DateTime endOfDayUtc = TimeZoneInfo.ConvertTimeToUtc(endOfEgyptDay, egyptZone);
+
             List<DoctorAppointmentDto> appointments = await dbContext.Bookings
                 .Include(b => b.Patient)
                 .Where(b => b.DoctorId == doctorId &&
-                            b.AppointmentDate.Date == date.Date &&
+                            b.AppointmentDate >= startOfDayUtc &&
+                            b.AppointmentDate <= endOfDayUtc &&
                             (b.Status == BookingStatus.Confirmed || b.Status == BookingStatus.Completed))
                 .OrderBy(b => b.AppointmentDate)
                 .Select(b => b.ToDoctorAppointmentDto())
