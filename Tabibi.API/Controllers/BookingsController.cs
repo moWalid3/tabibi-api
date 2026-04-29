@@ -83,7 +83,7 @@ namespace Tabibi.API.Controllers
             }
             else // completed
             {
-                query = query.Where(b => b.Status == BookingStatus.Completed)
+                query = query.Where(b => b.Status == BookingStatus.Completed || b.Status == BookingStatus.Refunded)
                              .OrderByDescending(b => b.AppointmentDate);
             }
 

@@ -75,7 +75,9 @@ namespace Tabibi.API.Controllers
                 .Where(b => b.DoctorId == doctorId &&
                             b.AppointmentDate >= startOfDayUtc &&
                             b.AppointmentDate <= endOfDayUtc &&
-                            (b.Status == BookingStatus.Confirmed || b.Status == BookingStatus.Completed))
+                            (b.Status == BookingStatus.Confirmed
+                                || b.Status == BookingStatus.Completed
+                                || b.Status == BookingStatus.Refunded))
                 .OrderBy(b => b.AppointmentDate)
                 .Take(3)
                 .Select(b => b.ToDoctorAppointmentDto())
@@ -121,7 +123,9 @@ namespace Tabibi.API.Controllers
                 .Where(b => b.DoctorId == doctorId &&
                             b.AppointmentDate >= startOfDayUtc &&
                             b.AppointmentDate <= endOfDayUtc &&
-                            (b.Status == BookingStatus.Confirmed || b.Status == BookingStatus.Completed))
+                            (b.Status == BookingStatus.Confirmed 
+                                || b.Status == BookingStatus.Completed
+                                || b.Status == BookingStatus.Refunded))
                 .OrderBy(b => b.AppointmentDate)
                 .Select(b => b.ToDoctorAppointmentDto())
                 .ToListAsync();
