@@ -61,7 +61,8 @@ namespace Tabibi.API.Controllers
         [Authorize(Roles = Roles.Patient)]
         [HttpGet("my-bookings")]
         [ProducesResponseType<List<PatientBookingDto>>(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetMyBookings([FromQuery] string type = "upcoming")
+        public async Task<IActionResult> GetMyBookings(
+            [FromQuery] BookingStatus status = BookingStatus.Confirmed)
         {
             string? patientId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -75,15 +76,18 @@ namespace Tabibi.API.Controllers
                 .Where(b => b.PatientId == patientId)
                 .AsQueryable();
 
-            if (type == "upcoming")
+            if (status == BookingStatus.Confirmed)
             {
-                query = query.Where(b => b.Status == BookingStatus.Confirmed ||
-                                         b.Status == BookingStatus.AwaitingPayment)
+                query = query.Where(b => b.Status == BookingStatus.Confirmed)
                              .OrderBy(b => b.AppointmentDate);
             }
-            else // completed
+            else if(status == BookingStatus.Refunded)
             {
-                query = query.Where(b => b.Status == BookingStatus.Completed || b.Status == BookingStatus.Refunded)
+                query = query.Where(b => b.Status == BookingStatus.Refunded)
+                             .OrderByDescending(b => b.AppointmentDate);
+            } else
+            {
+                query = query.Where(b => b.Status == BookingStatus.Completed)
                              .OrderByDescending(b => b.AppointmentDate);
             }
 
