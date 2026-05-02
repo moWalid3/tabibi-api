@@ -81,6 +81,7 @@ namespace Tabibi.API.Controllers
             List<DoctorBasicDto> favorites = await dbContext.Favorites.AsNoTracking()
                 .Where(f => f.PatientId == patientId)
                 .Include(f => f.Doctor)
+                    .ThenInclude(d => d.Reviews)
                 .Select(f => f.Doctor.ToDoctorBasicDto())
                 .ToListAsync();
 

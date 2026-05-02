@@ -7,6 +7,8 @@
         public string? AvatarUrl { get; init; }
         public decimal ConsultationFee { get; init; }
         public int YearsOfExperience { get; init; }
+        public required double Rating { get; init; }
+        public required int ReviewCount { get; init; }
         public string? Address { get; init; }
         public string? Department { get; init; }
         public bool IsFavorited { get; init; }

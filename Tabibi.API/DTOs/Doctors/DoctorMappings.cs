@@ -35,6 +35,8 @@ namespace Tabibi.API.DTOs.Doctors
                 AvatarUrl = doctor.AvatarUrl,
                 ConsultationFee = doctor.ConsultationFee,
                 YearsOfExperience = doctor.YearsOfExperience,
+                Rating = doctor.Reviews?.Average(r => (double?)r.Rating) ?? 0,
+                ReviewCount = doctor.Reviews?.Count ?? 0,
                 Department = doctor.Department?.Name,
                 Address = doctor.Clinic?.Address,
                 IsFavorited = patientId == null || (doctor.Favorites?.Any(f => f.PatientId == patientId) ?? false)

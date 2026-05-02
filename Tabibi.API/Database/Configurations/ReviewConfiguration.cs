@@ -21,7 +21,7 @@ namespace Tabibi.API.Database.Configurations
                    .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasOne(r => r.Doctor)
-                   .WithMany()
+                   .WithMany(d => d.Reviews)
                    .HasForeignKey(r => r.DoctorId)
                    .OnDelete(DeleteBehavior.Restrict);
 

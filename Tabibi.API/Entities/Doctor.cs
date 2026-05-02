@@ -16,5 +16,6 @@ namespace Tabibi.API.Entities
         public Clinic? Clinic { get; set; }
 
         public ICollection<Favorite>? Favorites { get; set; }
+        public ICollection<Review>? Reviews { get; set; }
     }
 }

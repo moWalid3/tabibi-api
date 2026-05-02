@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Stripe;
 using System.Dynamic;
 using System.Security.Claims;
 using System.Transactions;
@@ -77,12 +78,13 @@ namespace Tabibi.API.Controllers
 
             query.Search ??= query.Search?.Trim().ToLower();
 
-            IQueryable<DoctorBasicDto> patientsQuery = dbContext.Users.AsNoTracking()
+            IQueryable<Doctor> doctorsQuery = dbContext.Users.AsNoTracking()
                 .OfType<Doctor>()
                 .Include(d => d.Department)
                 .Include(d => d.Clinic)
                     .ThenInclude(c => c.City)
                 .Include(d => d.Favorites)
+                .Include(d => d.Reviews)
                 .Where(d => d.Status == DoctorStatus.Approved)
                 .Where(d => query.Search == null ||
                             d.Name.ToLower().Contains(query.Search) ||
@@ -91,19 +93,37 @@ namespace Tabibi.API.Controllers
                 .Where(d => query.Gender == null || d.Gender == query.Gender)
                 .Where(d => query.CityId == null || (d.Clinic != null && d.Clinic.CityId.ToString() == query.CityId))
                 .Where(d => query.DepartmentId == null || d.DepartmentId.ToString() == query.DepartmentId)
-                .ApplySort(query.Sort, sortMappingProvider.GetMappings<DoctorBasicDto, Doctor>())
-                .Select(d => d.ToDoctorBasicDto(patientId));
+                .ApplySort(query.Sort, sortMappingProvider.GetMappings<DoctorBasicDto, Doctor>());
 
-            int totalCount = await patientsQuery.CountAsync();
+            if (query.SortByRating?.ToUpper() == "DESC")
+            {
+                doctorsQuery = doctorsQuery.OrderByDescending(d => d.Reviews.Average(r => r.Rating));
+            }
+            else if (query.SortByRating?.ToUpper() == "ASC")
+            {
+                doctorsQuery = doctorsQuery.OrderBy(d => d.Reviews.Average(r => r.Rating));
+            }
 
-            List<DoctorBasicDto> patients = await patientsQuery
+            if (query.SortByReviewCount?.ToUpper() == "DESC")
+            {
+                doctorsQuery = doctorsQuery.OrderByDescending(d => d.Reviews.Count);
+            }
+            else if (query.SortByReviewCount?.ToUpper() == "ASC")
+            {
+                doctorsQuery = doctorsQuery.OrderBy(d => d.Reviews.Count);
+            }
+
+            int totalCount = await doctorsQuery.CountAsync();
+
+            List<DoctorBasicDto> doctors = await doctorsQuery
+                .Select(d => d.ToDoctorBasicDto(patientId))
                 .Skip((query.Page - 1) * query.PageSize)
                 .Take(query.PageSize)
                 .ToListAsync();
 
             PaginationResult<ExpandoObject> result = new()
             {
-                Items = dataShapingProvider.ShapeCollectionData(patients, query.Fields),
+                Items = dataShapingProvider.ShapeCollectionData(doctors, query.Fields),
                 Page = query.Page,
                 PageSize = query.PageSize,
                 TotalCount = totalCount
