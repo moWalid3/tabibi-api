@@ -5,6 +5,7 @@
         public Guid? CityId { get; set; }
 
         public City? City { get; set; }
+        public MedicalProfile? MedicalProfile { get; set; }
         public ICollection<Favorite>? Favorites { get; set; }
     }
 }

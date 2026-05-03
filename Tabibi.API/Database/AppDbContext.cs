@@ -21,6 +21,7 @@ namespace Tabibi.API.Database
         public DbSet<Prescription> Prescriptions { get; set; }
         public DbSet<PrescriptionItem> PrescriptionItems { get; set; }
         public DbSet<Favorite> Favorites { get; set; }
+        public DbSet<MedicalProfile> MedicalProfiles { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -39,6 +40,7 @@ namespace Tabibi.API.Database
             builder.Entity<Prescription>().ToTable(nameof(Prescriptions), Schemas.Core);
             builder.Entity<PrescriptionItem>().ToTable(nameof(PrescriptionItems), Schemas.Core);
             builder.Entity<Favorite>().ToTable(nameof(Favorites), Schemas.Core);
+            builder.Entity<MedicalProfile>().ToTable(nameof(MedicalProfiles), Schemas.Core);
 
             builder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
         }

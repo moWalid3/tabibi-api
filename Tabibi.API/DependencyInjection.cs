@@ -81,6 +81,8 @@ namespace Tabibi.API
 
             builder.Services.AddSignalR();
 
+            builder.Services.AddHttpClient<IGeminiAiService, GeminiAiService>();
+
             return builder;
         }
 
