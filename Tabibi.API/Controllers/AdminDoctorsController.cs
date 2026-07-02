@@ -10,6 +10,7 @@ using Tabibi.API.Database;
 using Tabibi.API.DTOs.AdminDoctors;
 using Tabibi.API.DTOs.AdminPatients;
 using Tabibi.API.Entities;
+using Tabibi.API.Entities.Enums;
 using Tabibi.API.Extensions;
 
 namespace Tabibi.API.Controllers
@@ -178,13 +179,9 @@ namespace Tabibi.API.Controllers
                 return NotFound();
             }
 
-            IdentityResult result = await userManager.DeleteAsync(doctor);
+            doctor.Status = DoctorStatus.Deleted;
 
-            if (!result.Succeeded)
-            {
-                return Problem(result.Errors.FirstOrDefault()?.Description,
-                    statusCode: StatusCodes.Status400BadRequest);
-            }
+            await dbContext.SaveChangesAsync();
 
             return NoContent();
         }
